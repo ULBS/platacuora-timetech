@@ -1,1 +1,58 @@
-<p>login works!</p>
+<div class="login-container">
+  <div class="login-card">
+    <h2>Autentificare</h2>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Nume</label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name" 
+          class="form-control"
+          placeholder="Introduceți numele"
+        >
+        <div *ngIf="submitted && f['name'].errors" class="error-message">
+          <div *ngIf="f['name'].errors['required']">Numele este obligatoriu</div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          formControlName="email" 
+          class="form-control"
+          placeholder="Introduceți email-ul"
+        >
+        <div *ngIf="submitted && f['email'].errors" class="error-message">
+          <div *ngIf="f['email'].errors['required']">Email-ul este obligatoriu</div>
+          <div *ngIf="f['email'].errors['email']">Formatul email-ului este invalid</div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Parolă</label>
+        <input 
+          type="password" 
+          id="password" 
+          formControlName="password" 
+          class="form-control"
+          placeholder="Introduceți parola"
+        >
+        <div *ngIf="submitted && f['password'].errors" class="error-message">
+          <div *ngIf="f['password'].errors['required']">Parola este obligatorie</div>
+          <div *ngIf="f['password'].errors['minlength']">Parola trebuie să aibă minim 6 caractere</div>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="login-button">Autentificare</button>
+      </div>
+    </form>
+    
+    <div *ngIf="invalidDomain" class="domain-error">
+      <p>Autentificarea este permisă doar pentru adresele de email &#64;ulbsibiu.ro</p>
+    </div>
+  </div>
+</div>
