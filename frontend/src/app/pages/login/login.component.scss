@@ -2,7 +2,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 60px); // 60px este înălțimea navbar-ului
+  min-height: calc(100vh - 60px); 
   background-color: #f5f5f5;
   background-image: url('/assets/images/backgroundLogin.jpg');
   background-size: cover;
@@ -10,8 +10,8 @@
 }
 
 .login-card {
-  background-color: rgba(0, 0, 0, 0.5); /* Black note with transparency */
-  color: white; /* Ensure text is visible on dark background */
+  background-color: rgba(0, 0, 0, 0.5); 
+  color: white; 
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 30px;
