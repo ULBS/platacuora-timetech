@@ -4,6 +4,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { HoursListComponent } from './pages/hours-list/hours-list.component';
 import { CalendarComponent } from './pages/calendar/calendar.component';
 import { AuthGuard } from '../core/services/auth.guard';
+import { ProfileComponent } from './pages/profile/profile.component';
 
 
 export const routes: Routes = [
@@ -18,6 +19,11 @@ export const routes: Routes = [
     path: 'calendar', 
     component: CalendarComponent,
     canActivate: [AuthGuard]  
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
+    canActivate: [AuthGuard]
   },
   { path: '**', redirectTo: '' } 
 ];
