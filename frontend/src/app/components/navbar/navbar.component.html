@@ -1,11 +1,18 @@
 <nav class="navbar">
   <div class="logo">
-    <a routerLink="/"><img src="assets/images/LOGO-ULBS_orizontal_negativ.png" alt="Logo" width="200" /></a>
+    <a routerLink="/"><img src="/assets/images/LOGO-ULBS_orizontal_negativ.png" alt="Logo"></a>
   </div>
   <div class="nav-links">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
-    <a routerLink="/hours-list" routerLinkActive="active">Lista ore</a>
-    <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
-    <a routerLink="/login" routerLinkActive="active">Login</a>
+    <ng-container *ngIf="isAuthenticated">
+      <a routerLink="/hours-list" routerLinkActive="active">Lista ore</a>
+      <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
+    </ng-container>
+    <ng-container *ngIf="!isAuthenticated">
+      <a routerLink="/login" routerLinkActive="active">Login</a>
+    </ng-container>
+    <ng-container *ngIf="isAuthenticated">
+      <a href="#" (click)="logout($event)" class="logout-link">Logout</a>
+    </ng-container>
   </div>
 </nav>
