@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const path = require('path');
 
+
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
@@ -36,9 +37,19 @@ apiRouter.get('/test', (req, res) => {
   res.json({ message: 'Backend API is working!' });
 });
 
-// Import and use routes
-// const userRoutes = require('./src/routes/user.routes');
-// apiRouter.use('/users', userRoutes);
+// Import Routes
+const userRoutes             = require('./src/routes/userRoutes');
+const calendarRoutes         = require('./src/routes/calendarRoutes');
+const teachingHoursRoutes    = require('./src/routes/teachingHoursRoutes');
+const paymentDeclarationRoutes = require('./src/routes/paymentDeclarationRoutes');
+const semesterConfigRoutes   = require('./src/routes/semesterConfigRoutes');
+
+// Use Routes
+apiRouter.use('/users',             userRoutes);
+apiRouter.use('/calendars',         calendarRoutes);
+apiRouter.use('/teaching-hours',    teachingHoursRoutes);
+apiRouter.use('/declarations',      paymentDeclarationRoutes);
+apiRouter.use('/semester-configs',  semesterConfigRoutes);
 
 // Start server
 app.listen(PORT, () => {

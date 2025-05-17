@@ -113,8 +113,6 @@ calendarSchema.pre('validate', function(next) {
   next();
 });
 
-const Calendar = mongoose.model('Calendar', calendarSchema);
-
 // Static method to import holidays from public API
 calendarSchema.statics.importHolidays = async function(year) {
   try {
@@ -140,5 +138,7 @@ calendarSchema.statics.importHolidays = async function(year) {
     throw error;
   }
 };
+
+const Calendar = mongoose.model('Calendar', calendarSchema);
 
 module.exports = Calendar;
