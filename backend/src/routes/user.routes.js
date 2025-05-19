@@ -48,12 +48,10 @@ router.put('/:id', authMiddleware, authorizeRoles('admin'), async (req, res) => 
   try {
     const { role } = req.body;
     
-    // Validate role
     if (role && !['user', 'admin'].includes(role)) {
       return res.status(400).json({ message: 'Rol invalid' });
     }
     
-    // Update user
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { role },

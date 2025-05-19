@@ -12,8 +12,6 @@ const router = express.Router();
 router.post('/', authMiddleware, authorizeRoles('admin'), async (req, res) => {
   try {
     const { name, academicYear, startDate, endDate, calendarId, oddWeekStart } = req.body;
-    
-    // Create new semester configuration
     const semesterConfig = new SemesterConfig({
       name,
       academicYear,

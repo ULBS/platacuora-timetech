@@ -10,15 +10,12 @@ const router = express.Router();
  * @desc    Record new teaching hours
  * @access  Private
  */
-router.post('/', authMiddleware, async (req, res) => {
-  try {
+router.post('/', authMiddleware, async (req, res) => {  try {
     const { 
       date, semesterId, activityType, startTime, endTime, 
       disciplineName, disciplineType, weekType, departmentId, facultyId,
       hourCount, comments 
     } = req.body;
-    
-    // Validate that date is in semester date range
     const semester = await SemesterConfig.findById(semesterId);
     if (!semester) {
       return res.status(400).json({ message: 'Semestrul specificat nu există' });
