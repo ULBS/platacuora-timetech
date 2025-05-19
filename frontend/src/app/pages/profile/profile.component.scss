@@ -1,0 +1,70 @@
+.profile-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.profile-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  
+  h1 {
+    margin: 0;
+    color: #333;
+    font-size: 2rem;
+  }
+}
+
+.profile-section {
+  margin-bottom: 2rem;
+  
+  h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #444;
+    font-size: 1.5rem;
+  }
+}
+
+.profile-info {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 1rem;
+  
+  p {
+    margin-bottom: 1rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.loading {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+}
+
+.tipuri-dropdown {
+  margin-bottom: 1rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+  }
+  
+  select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    
+    &:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+  }
+}
