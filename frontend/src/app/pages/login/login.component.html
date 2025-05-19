@@ -1,6 +1,11 @@
 <div class="login-container">
   <div class="login-card">
     <h2>Autentificare</h2>
+
+    <div *ngIf="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="name">Nume</label>
@@ -47,12 +52,25 @@
       </div>
       
       <div class="form-actions">
-        <button type="submit" class="login-button">Autentificare</button>
+        <button type="submit" class="login-button" [disabled]="loading">
+          <span *ngIf="loading" class="spinner"></span>
+          Autentificare
+        </button>
       </div>
     </form>
     
+    <div class="divider">
+      <span>sau</span>
+    </div>
+    
+    <button class="google-icon" (click)="loginWithGoogle()" [disabled]="loading">
+      <span *ngIf="loading" class="spinner"></span>
+      <img src="/assets/images/google-icon.svg" alt="Google Icon" class="google-icon">
+      Autentificare cu Google
+    </button>
+    
     <div *ngIf="invalidDomain" class="domain-error">
-      <p>Autentificarea este permisă doar pentru adresele de email &#64;ulbsibiu.ro</p>
+      <p>Autentificarea este permisă doar pentru adresele de email &#64;ulbsibiu.com</p>
     </div>
   </div>
 </div>
