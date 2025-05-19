@@ -10,24 +10,23 @@
         <p><strong>Email:</strong> {{ user.email }}</p>
         <div>
           <label for="tipuri"><strong>Tip:</strong></label>
-          <select id="tipuri" [(ngModel)]="selectedTip" class="tipuri-dropdown">
+          <select id="tipuri" [(ngModel)]="user.tip" name="tip" class="tipuri-dropdown">
             <option *ngFor="let tip of tipuri" [value]="tip">{{ tip }}</option>
           </select>
         </div>
         <p><label for="input1"><strong>Declarant (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input1" type="text" class="form-control" /></p>
+        <p><input id="input1" type="text" [(ngModel)]="user.declarant" name="declarant" class="form-control" /></p>
         <p><label for="input2"><strong>Director Departament (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input2" type="text" class="form-control" /></p>
+        <p><input id="input2" type="text" [(ngModel)]="user.directorDepartament" name="directorDepartament" class="form-control" /></p>
         <p><label for="input3"><strong>Decan (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input3" type="text" class="form-control" /></p>
+        <p><input id="input3" type="text" [(ngModel)]="user.decan" name="decan" class="form-control" /></p>
         <p><label for="input4"><strong>Universitatea (denumire completă):</strong></label></p>
-        <p><input id="input4" type="text" class="form-control" /></p>
+        <p><input id="input4" type="text" [(ngModel)]="user.universitate" name="universitate" class="form-control" /></p>
         <p><label for="input5"><strong>Facultatea (denumire completă):</strong></label></p>
-        <p><input id="input5" type="text" class="form-control" /></p>
+        <p><input id="input5" type="text" [(ngModel)]="user.facultate" name="facultate" class="form-control" /></p>
         <p><label for="input6"><strong>Departamentul (denumire completă):</strong></label></p>
-        <p><input id="input6" type="text" class="form-control" /></p>
-      
-        <div>
+        <p><input id="input6" type="text" [(ngModel)]="user.departament" name="departament" class="form-control" /></p>
+        <button (click)="saveProfile()">Salvează</button>
       </div>
     </div>
   </div>

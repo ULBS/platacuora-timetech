@@ -13,6 +13,17 @@ export interface User {
   token?: string;
 }
 
+// Interfață extinsă pentru User cu câmpurile formularului
+export interface ExtendedUser extends User {
+  tip?: string;
+  declarant?: string;
+  directorDepartament?: string;
+  decan?: string;
+  universitate?: string;
+  facultate?: string;
+  departament?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -21,12 +32,20 @@ export class AuthService {
   public currentUser: Observable<User | null>;
   
   // User de test pentru simulare
-  private mockUser: User = {
+  private mockUser: ExtendedUser = {
     id: 1,
     name: 'Test User',
     email: 'test@ulbsibiu.com',
     role: 'user',
-    token: 'mock-jwt-token-12345'
+    token: 'mock-jwt-token-12345',
+    tip: '',
+    declarant: '',
+    directorDepartament: '',
+    decan: '',
+    universitate: '',
+    facultate: '',
+    departament: ''
+    
   };
 
   constructor(
