@@ -1,14 +1,29 @@
 import { Routes } from '@angular/router';
-import { TestComponent } from './test/test.component';
+import { HomeComponent } from './pages/home/home.component';
 import { LoginComponent } from './pages/login/login.component';
 import { HoursListComponent } from './pages/hours-list/hours-list.component';
 import { CalendarComponent } from './pages/calendar/calendar.component';
-import { HomeComponent } from './pages/home/home.component';
+import { AuthGuard } from '../core/services/auth.guard';
+import { ProfileComponent } from './pages/profile/profile.component';
+
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, pathMatch: 'full' },
+  { path: '', component: HomeComponent, pathMatch: 'full' }, 
   { path: 'login', component: LoginComponent },
-  { path: 'hours-list', component: HoursListComponent },
-  { path: 'calendar', component: CalendarComponent },
-  { path: '**', redirectTo: '' }  
+  { 
+    path: 'hours-list', 
+    component: HoursListComponent,
+    canActivate: [AuthGuard] 
+  },
+  { 
+    path: 'calendar', 
+    component: CalendarComponent,
+    canActivate: [AuthGuard]  
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
+    canActivate: [AuthGuard]
+  },
+  { path: '**', redirectTo: '' } 
 ];

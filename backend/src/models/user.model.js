@@ -22,7 +22,11 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/.+\@ulbsibiu\.ro$/, 'Doar email-urile cu domeniul @ulbsibiu.ro sunt acceptate'],
+      // TESTING: Modified email validation to allow both domains
+      // For production, replace with the commented regex below
+      match: [/.+\@(ulbsibiu\.ro|gmail\.com)$/, 'Doar email-urile cu domeniul @ulbsibiu.ro sau @gmail.com sunt acceptate'],
+      // Original validation for production:
+      // match: [/.+\@ulbsibiu\.ro$/, 'Doar email-urile cu domeniul @ulbsibiu.ro sunt acceptate'],
     },
     profilePicture: {
       type: String,
@@ -31,11 +35,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
-    },
-    position: {
+    },    position: {
       type: String,
       enum: ['Prof', 'Conf', 'Lect', 'Asist', 'Drd', 'titular', 'asociat'],
       required: [true, 'Poziția este obligatorie'],
+      default: 'titular' // Default value to use during Google OAuth registration
     },
     faculty: {
       type: String,

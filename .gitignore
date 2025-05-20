@@ -135,3 +135,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 Task.txt
+backend/debug-google-profile.js
+backend/test-jwt.js
+backend/test-oauth.js
+

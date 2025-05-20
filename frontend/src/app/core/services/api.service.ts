@@ -19,7 +19,10 @@ export class ApiService {
    * @returns Observable of response
    */
   get<T>(endpoint: string, params?: any): Observable<T> {
-    const options = { params: this.createHttpParams(params) };
+    const options = { 
+      params: this.createHttpParams(params),
+      withCredentials: true // Include credentials for cookie auth
+    };
     return this.http.get<T>(`${this.apiUrl}/${endpoint}`, options)
       .pipe(catchError(this.handleError));
   }
@@ -31,7 +34,7 @@ export class ApiService {
    * @returns Observable of response
    */
   post<T>(endpoint: string, body: any): Observable<T> {
-    return this.http.post<T>(`${this.apiUrl}/${endpoint}`, body)
+    return this.http.post<T>(`${this.apiUrl}/${endpoint}`, body, { withCredentials: true })
       .pipe(catchError(this.handleError));
   }
 
@@ -42,7 +45,7 @@ export class ApiService {
    * @returns Observable of response
    */
   put<T>(endpoint: string, body: any): Observable<T> {
-    return this.http.put<T>(`${this.apiUrl}/${endpoint}`, body)
+    return this.http.put<T>(`${this.apiUrl}/${endpoint}`, body, { withCredentials: true })
       .pipe(catchError(this.handleError));
   }
 
@@ -54,7 +57,7 @@ export class ApiService {
    */
   delete<T>(endpoint: string, id?: string): Observable<T> {
     const url = id ? `${this.apiUrl}/${endpoint}/${id}` : `${this.apiUrl}/${endpoint}`;
-    return this.http.delete<T>(url)
+    return this.http.delete<T>(url, { withCredentials: true })
       .pipe(catchError(this.handleError));
   }
 
