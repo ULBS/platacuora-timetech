@@ -8,6 +8,7 @@ const session = require('express-session');
 const dotenv = require('dotenv');
 const path = require('path');
 
+
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
