@@ -71,21 +71,32 @@ export class LoginComponent implements OnInit {
           this.loading = false;
         }
       });
-  }
-
-  loginWithGoogle() {
+  }  loginWithGoogle(event?: Event) {
+    if (event) {
+      event.preventDefault();
+    }
+    
     this.loading = true;
     this.error = '';
     
-    this.authService.loginWithGoogle()
-      .subscribe({
-        next: () => {
-          this.router.navigate([this.returnUrl]);
-        },
-        error: (error) => {
-          this.error = error.message || 'Autentificare cu Google eșuată';
-          this.loading = false;
-        }
-      });
+    console.log('Login with Google clicked - attempting redirect to Google auth');
+    
+    try {
+      // Log the auth URL for debugging
+      const authUrl = this.authService.getGoogleAuthUrl();
+      console.log('Auth URL:', authUrl);
+      
+      // Show message to user
+      this.error = 'Redirecting to Google authentication...';
+      
+      // Use the auth service to redirect
+      setTimeout(() => {
+        this.authService.loginWithGoogle();
+      }, 500); // Small delay to show the message to the user
+    } catch (error) {
+      console.error('Error initiating Google login:', error);
+      this.loading = false;
+      this.error = 'Could not initiate Google login. Please try again.';
+    }
   }
 }

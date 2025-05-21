@@ -4,13 +4,18 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { environment } from '../../enviroments/environment';
 
 export interface User {
-  id: number;
-  name: string;
+  id: number | string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   role: string;
   token?: string;
+  googleId?: string;
+  profilePicture?: string;
 }
 
 // Interfață extinsă pentru User cu câmpurile formularului
@@ -87,32 +92,69 @@ export class AuthService {
     //       return user;
     //     })
     //   );
+  }    getGoogleAuthUrl(): string {
+      // Return the full URL for Google authentication
+      return `${environment.authUrl}/google`;
+    }
+      loginWithGoogle(): void {
+      // Store the current URL as the return URL after authentication
+      if(isPlatformBrowser(this.platformId)) {
+        localStorage.setItem('returnUrl', this.router.url || '/');
+        
+        // Log the redirection attempt
+        const authUrl = this.getGoogleAuthUrl();
+        console.log('Redirecting to Google auth endpoint:', authUrl);
+        
+        try {
+          // Force a full page redirect to the Google auth endpoint
+          // This should take the user to the Google login page
+          // unless they're already logged in to Google
+          window.location.assign(authUrl);
+          console.log('Redirect initiated');
+        } catch (error) {
+          console.error('Error redirecting to Google auth:', error);
+        }
+      } else {
+        console.error('Cannot redirect to Google authentication from server-side rendering');
+      }
+    }
+  /**
+   * Handle the authentication callback from Google OAuth
+   * @param token JWT token received from the backend
+   */  handleAuthCallback(token: string): Observable<User> {
+    return this.http.post<User>(`${environment.authUrl}/verify`, { token })
+      .pipe(
+        map(user => {
+          // Store user details and JWT token in local storage
+          const userData = {
+            id: user.id,
+            name: user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : `${user.email.split('@')[0]}`),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            token: token,
+            profilePicture: user.profilePicture
+          };
+          
+          // Only use localStorage in browser environment
+          if(isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+          }
+          
+          this.currentUserSubject.next(userData);
+          return userData;
+        }),
+        catchError(error => {
+          console.error('Authentication callback error:', error);
+          return throwError(() => new Error('Verificarea token-ului a eșuat'));
+        })
+      );
   }
-
-  
-  loginWithGoogle(): Observable<User> {
-   // se retuneaza datele utiliztorului de test in application/local storage
-    const googleUser: User = {
-      id: 2,
-      name: 'Google User',
-      email: 'google@ulbsibiu.com',
-      role: 'user',
-      token: 'mock-google-jwt-token-67890'
-    };
-    
-    localStorage.setItem('currentUser', JSON.stringify(googleUser));
-    this.currentUserSubject.next(googleUser);
-    return of(googleUser);
-    
-    // În implementarea reală, ar trebui să integrăm Google OAuth:
-    // 1. Inițierea procesului OAuth
-    // 2. Gestionarea callback-ului
-    // 3. Trimiterea token-ului către backend
-    // 4. Primirea unui JWT valid de la backend
-  }
-
   logout(): void {
-    localStorage.removeItem('currentUser');
+    if(isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('currentUser');
+    }
     this.currentUserSubject.next(null);
     this.router.navigate(['/login']);
   }

@@ -12,14 +12,12 @@ const router = express.Router();
 router.post('/', authMiddleware, authorizeRoles('admin'), async (req, res) => {
   try {
     const { name, academicYear, startDate, endDate, daysOfWeek, holidayList } = req.body;
-    
-    // Create new calendar
-    const calendar = new Calendar({
+      const calendar = new Calendar({
       name,
       academicYear,
       startDate,
       endDate,
-      daysOfWeek: daysOfWeek || [1, 2, 3, 4, 5], // Default Monday to Friday
+      daysOfWeek: daysOfWeek || [1, 2, 3, 4, 5],
       holidayList: holidayList || [],
       createdBy: req.user.id
     });
@@ -62,7 +60,6 @@ router.get('/current', authMiddleware, async (req, res) => {
   try {
     const currentDate = new Date();
     
-    // Find calendar that includes the current date
     const calendar = await Calendar.findOne({
       startDate: { $lte: currentDate },
       endDate: { $gte: currentDate }
@@ -108,7 +105,6 @@ router.put('/:id', authMiddleware, authorizeRoles('admin'), async (req, res) => 
   try {
     const { name, academicYear, startDate, endDate, daysOfWeek, holidayList } = req.body;
     
-    // Update calendar
     const calendar = await Calendar.findByIdAndUpdate(
       req.params.id,
       {
@@ -172,9 +168,7 @@ router.post('/import-holidays', authMiddleware, authorizeRoles('admin'), async (
     if (!year) {
       return res.status(400).json({ message: 'Anul este obligatoriu' });
     }
-    
-    // Find the calendar if ID is provided
-    let calendar;
+      let calendar;
     if (calendarId) {
       calendar = await Calendar.findById(calendarId);
       
@@ -182,9 +176,6 @@ router.post('/import-holidays', authMiddleware, authorizeRoles('admin'), async (
         return res.status(404).json({ message: 'Calendar negăsit' });
       }
     }
-    
-    // TODO: Implement holiday API integration here
-    // For now, return a message about manual holiday imports
     
     return res.json({ 
       message: 'Importarea sărbătorilor va fi implementată ulterior. Pentru moment, vă rugăm să introduceți manual sărbătorile.',

@@ -66,7 +66,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Method to get full name
 userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });

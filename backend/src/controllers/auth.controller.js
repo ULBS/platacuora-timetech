@@ -153,11 +153,10 @@ const authController = {
       return res.status(500).json({ message: 'Eroare de server' });
     }
   },
-
   /**
-   * Verify JWT token and return basic user info
+   * Verify JWT token and return user information from the database
    */
-  verifyToken: (req, res) => {
+  verifyToken: async (req, res) => {
     const token = req.cookies.auth_token || req.body.token || 
                   req.query.token || req.headers['x-access-token'] ||
                   (req.headers.authorization && req.headers.authorization.split(' ')[1]);
@@ -167,14 +166,32 @@ const authController = {
     }
 
     try {
+      // Verify token validity
       const decoded = jwt.verify(token, jwtConfig.secret);
+      
+      // Retrieve the full user object from the database
+      const user = await User.findById(decoded.id).select('-__v');
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Utilizatorul nu a fost găsit' });
+      }
+      
+      // Return full user data
       return res.json({ 
-        id: decoded.id,
-        email: decoded.email,
-        role: decoded.role,
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        profilePicture: user.profilePicture,
+        position: user.position,
+        faculty: user.faculty,
+        department: user.department,
+        profileCompleted: user.profileCompleted,
         isValid: true 
       });
     } catch (error) {
+      console.error('Token verification error:', error);
       return res.status(401).json({ message: 'Token invalid sau expirat' });
     }
   }

@@ -13,11 +13,16 @@ import { Router } from '@angular/router';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
-  constructor(private router: Router) {}
-
-  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Get token from localStorage
-    const token = localStorage.getItem('auth_token');
+  constructor(private router: Router) {}  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // Get the current user from localStorage
+    const currentUserString = localStorage.getItem('currentUser');
+    let token = null;
+    
+    if (currentUserString) {
+      // Parse the stored user and get the token
+      const currentUser = JSON.parse(currentUserString);
+      token = currentUser.token;
+    }
     
     // Clone the request and add the token if it exists
     if (token) {
@@ -34,7 +39,6 @@ export class AuthInterceptor implements HttpInterceptor {
         if (error.status === 401) {
           // Clear localStorage
           localStorage.removeItem('currentUser');
-          localStorage.removeItem('auth_token');
           
           // Redirect to login page
           this.router.navigate(['/login']);

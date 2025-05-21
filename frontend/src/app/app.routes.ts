@@ -5,11 +5,15 @@ import { HoursListComponent } from './pages/hours-list/hours-list.component';
 import { CalendarComponent } from './pages/calendar/calendar.component';
 import { AuthGuard } from '../core/services/auth.guard';
 import { ProfileComponent } from './pages/profile/profile.component';
+import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
+import { DebugAuthComponent } from './debug-auth.component';
 
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' }, 
   { path: 'login', component: LoginComponent },
+  { path: 'auth-callback', component: AuthCallbackComponent },
+  { path: 'debug-auth', component: DebugAuthComponent },
   { 
     path: 'hours-list', 
     component: HoursListComponent,

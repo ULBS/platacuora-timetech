@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
   apiUrl: '/api',
-  authUrl: '/auth',
+  authUrl: '/api/auth',
+  frontendUrl: '',  // Will be set to the current URL in production
 };

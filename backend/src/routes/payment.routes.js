@@ -14,12 +14,11 @@ router.post('/', authMiddleware, async (req, res) => {
   try {
     const { title, semesterId, startDate, endDate, teachingHourIds, totalHours, hourlyRate, comments } = req.body;
     
-    // Validate teaching hours
+
     if (!teachingHourIds || teachingHourIds.length === 0) {
       return res.status(400).json({ message: 'Trebuie să selectați cel puțin o înregistrare de ore predate' });
     }
     
-    // Check if teaching hours belong to the current user
     const teachingHours = await TeachingHours.find({
       _id: { $in: teachingHourIds },
       userId: req.user.id
@@ -29,13 +28,11 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Unele înregistrări de ore predate nu sunt valide' });
     }
     
-    // Calculate total hours if not provided
     let calculatedTotalHours = totalHours;
     if (!calculatedTotalHours) {
       calculatedTotalHours = teachingHours.reduce((total, record) => total + record.hourCount, 0);
     }
     
-    // Create new payment declaration
     const paymentDeclaration = new PaymentDeclaration({
       userId: req.user.id,
       title,
@@ -73,7 +70,7 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const { status, semesterId, startDate, endDate } = req.query;
     
-    // Build query
+
     const query = { userId: req.user.id };
     
     if (status) query.status = status;
@@ -88,7 +85,7 @@ router.get('/', authMiddleware, async (req, res) => {
       query.endDate = { $lte: new Date(endDate) };
     }
     
-    // Get payment declarations
+
     const paymentDeclarations = await PaymentDeclaration.find(query)
       .sort({ createdAt: -1 })
       .populate('semesterId', 'name academicYear')
@@ -110,7 +107,7 @@ router.get('/admin', authMiddleware, authorizeRoles('admin'), async (req, res) =
   try {
     const { userId, status, semesterId, startDate, endDate } = req.query;
     
-    // Build query
+
     const query = {};
     
     if (userId) query.userId = userId;
@@ -126,7 +123,6 @@ router.get('/admin', authMiddleware, authorizeRoles('admin'), async (req, res) =
       query.endDate = { $lte: new Date(endDate) };
     }
     
-    // Get payment declarations with user info
     const paymentDeclarations = await PaymentDeclaration.find(query)
       .sort({ createdAt: -1 })
       .populate('userId', 'firstName lastName email position')
@@ -156,7 +152,6 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Check if the user is the owner or an admin
     if (paymentDeclaration.userId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Acces interzis' });
     }
@@ -177,26 +172,21 @@ router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { title, semesterId, startDate, endDate, teachingHourIds, totalHours, hourlyRate, comments } = req.body;
     
-    // Get the payment declaration
     const paymentDeclaration = await PaymentDeclaration.findById(req.params.id);
     
     if (!paymentDeclaration) {
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Check if the user is the owner
     if (paymentDeclaration.userId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Acces interzis' });
     }
     
-    // Can only update if in draft status
     if (paymentDeclaration.status !== 'draft') {
       return res.status(400).json({ message: 'Nu puteți modifica o declarație care a fost deja trimisă sau aprobată' });
     }
     
-    // Validate and update teaching hours if provided
     if (teachingHourIds && teachingHourIds.length > 0) {
-      // Check if teaching hours belong to the current user
       const teachingHours = await TeachingHours.find({
         _id: { $in: teachingHourIds },
         userId: req.user.id
@@ -208,13 +198,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
       
       paymentDeclaration.teachingHours = teachingHourIds;
       
-      // Update total hours if not explicitly provided
       if (!totalHours) {
         paymentDeclaration.totalHours = teachingHours.reduce((total, record) => total + record.hourCount, 0);
       }
     }
     
-    // Update fields
     if (title) paymentDeclaration.title = title;
     if (semesterId) paymentDeclaration.semesterId = semesterId;
     if (startDate) paymentDeclaration.startDate = new Date(startDate);
@@ -223,7 +211,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
     if (hourlyRate) paymentDeclaration.hourlyRate = hourlyRate;
     if (comments !== undefined) paymentDeclaration.comments = comments;
     
-    // Recalculate total amount
     paymentDeclaration.totalAmount = paymentDeclaration.totalHours * paymentDeclaration.hourlyRate;
     paymentDeclaration.updatedAt = Date.now();
     
@@ -254,12 +241,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Check if the user is the owner
     if (paymentDeclaration.userId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Acces interzis' });
     }
     
-    // Can only delete if in draft status
     if (paymentDeclaration.status !== 'draft') {
       return res.status(400).json({ message: 'Nu puteți șterge o declarație care a fost deja trimisă sau aprobată' });
     }
@@ -286,17 +271,14 @@ router.put('/:id/submit', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Check if the user is the owner
     if (paymentDeclaration.userId.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Acces interzis' });
     }
     
-    // Can only submit if in draft status
     if (paymentDeclaration.status !== 'draft') {
       return res.status(400).json({ message: 'Declarația a fost deja trimisă sau aprobată' });
     }
     
-    // Update status
     paymentDeclaration.status = 'pending';
     paymentDeclaration.submittedAt = Date.now();
     
@@ -322,12 +304,10 @@ router.put('/:id/approve', authMiddleware, authorizeRoles('admin'), async (req, 
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Can only approve if in pending status
     if (paymentDeclaration.status !== 'pending') {
       return res.status(400).json({ message: 'Declarația nu este în așteptare pentru aprobare' });
     }
     
-    // Update status
     paymentDeclaration.status = 'approved';
     paymentDeclaration.approvedBy = req.user.id;
     paymentDeclaration.approvedAt = Date.now();
@@ -360,12 +340,12 @@ router.put('/:id/reject', authMiddleware, authorizeRoles('admin'), async (req, r
       return res.status(404).json({ message: 'Declarație de plată negăsită' });
     }
     
-    // Can only reject if in pending status
+
     if (paymentDeclaration.status !== 'pending') {
       return res.status(400).json({ message: 'Declarația nu este în așteptare pentru aprobare' });
     }
     
-    // Update status
+
     paymentDeclaration.status = 'rejected';
     paymentDeclaration.rejectionReason = rejectionReason;
     paymentDeclaration.rejectedBy = req.user.id;
