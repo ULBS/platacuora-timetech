@@ -62,8 +62,7 @@
     <div class="divider">
       <span>sau</span>
     </div>
-    
-    <button class="google-icon" (click)="loginWithGoogle()" [disabled]="loading">
+      <button type="button" class="google-icon" (click)="loginWithGoogle($event)" [disabled]="loading">
       <span *ngIf="loading" class="spinner"></span>
       <img src="/assets/images/google-icon.svg" alt="Google Icon" class="google-icon">
       Autentificare cu Google

@@ -16,8 +16,6 @@ router.post(
   calendarCtrl.createCalendar    
 );
 
-
-
 /**
  * @route   GET /api/calendar
  * @desc    Get all calendars
@@ -28,7 +26,6 @@ router.get(
   authMiddleware,
   calendarCtrl.getCalendars
 );
-
 
 /**
  * @route   GET /api/calendar/current
@@ -63,7 +60,6 @@ router.put(
   authorizeRoles('admin'),
   calendarCtrl.updateCalendar
 );
-
 
 /**
  * @route   DELETE /api/calendar/:id

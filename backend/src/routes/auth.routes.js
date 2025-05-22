@@ -47,7 +47,7 @@ router.put('/profile', authMiddleware, authController.updateProfile);
 
 /**
  * @route   POST /api/auth/verify
- * @desc    Verify JWT token
+ * @desc    Verify JWT token and return user details
  * @access  Public
  */
 router.post('/verify', authController.verifyToken);

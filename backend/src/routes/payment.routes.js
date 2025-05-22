@@ -14,6 +14,7 @@ router.post(
   authMiddleware,
   paymentCtrl.createPaymentDeclaration
 );
+
 /**
  * @route   GET /api/payment
  * @desc    Get payment declarations for the current user
@@ -81,7 +82,6 @@ router.put(
   paymentCtrl.submitPaymentDeclaration
 );
 
-
 /**
  * @route   PUT /api/payment/:id/approve
  * @desc    Approve payment declaration (admin only)
@@ -93,6 +93,7 @@ router.put(
   authorizeRoles('admin'),
   paymentCtrl.approvePaymentDeclaration
 );
+
 /**
  * @route   PUT /api/payment/:id/reject
  * @desc    Reject payment declaration (admin only)
@@ -105,18 +106,15 @@ router.put(
   paymentCtrl.rejectPaymentDeclaration
 );
 
-
 /**
  * @route   POST /api/payment/:id/generate-pdf
  * @desc    Generate PDF for payment declaration
  * @access  Private
  */
-
 router.post(
   '/:id/generate-pdf',
   authMiddleware,
   paymentCtrl.generatePDF
 );
-
 
 module.exports = router;
