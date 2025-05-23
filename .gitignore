@@ -139,3 +139,5 @@ backend/debug-google-profile.js
 backend/test-jwt.js
 backend/test-oauth.js
 
+backend/src/docs/teaching-hours-api.md
+backend/teaching-hours-api.postman.json

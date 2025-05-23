@@ -7,6 +7,7 @@ const passport = require('passport');
 const session = require('express-session');
 const dotenv = require('dotenv');
 const path = require('path');
+const { swaggerUi, swaggerDocs } = require('./src/config/swagger.config');
 
 
 // Load environment variables
@@ -57,7 +58,7 @@ const authRoutes = require('./src/routes/auth.routes');
 const userRoutes = require('./src/routes/user.routes');
 const calendarRoutes = require('./src/routes/calendar.routes');
 const semesterRoutes = require('./src/routes/semester.routes');
-const teachingHoursRoutes = require('./src/routes/teaching-hours.routes');
+const teachingHoursRoutes = require('./src/routes/teachingHoursRoutes'); // Updated to use the enhanced version
 const paymentRoutes = require('./src/routes/payment.routes');
 
 // Register routes
@@ -65,8 +66,11 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/calendar', calendarRoutes);
 apiRouter.use('/semester', semesterRoutes);
-apiRouter.use('/teaching-hours', teachingHoursRoutes);
+apiRouter.use('/teaching-hours', teachingHoursRoutes); // Using enhanced routes
 apiRouter.use('/payment', paymentRoutes);
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Test route
 apiRouter.get('/test', (req, res) => {
