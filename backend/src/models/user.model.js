@@ -30,12 +30,11 @@ const userSchema = new mongoose.Schema(
     },
     profilePicture: {
       type: String,
-    },
-    role: {
+    },    role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
-    },    position: {
+    },position: {
       type: String,
       enum: ['Prof', 'Conf', 'Lect', 'Asist', 'Drd', 'titular', 'asociat'],
       required: [true, 'Poziția este obligatorie'],

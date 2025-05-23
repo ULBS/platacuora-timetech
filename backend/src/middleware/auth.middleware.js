@@ -6,18 +6,34 @@ const jwtConfig = require('../config/jwt.config');
  * Verifies the JWT token and attaches user data to the request
  */
 const authMiddleware = (req, res, next) => {
-  try {
-    // Get token from various sources
-    const token = req.cookies.auth_token || req.body.token || 
-                  req.query.token || req.headers['x-access-token'] ||
-                  (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+  try {    // Get token from various sources
+    let token = null;
+    
+    // Check each possible source in a way that avoids errors
+    if (req.cookies && req.cookies.auth_token) {
+      token = req.cookies.auth_token;
+    } else if (req.body && req.body.token) {
+      token = req.body.token;
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    } else if (req.headers && req.headers['x-access-token']) {
+      token = req.headers['x-access-token'];
+    } else if (req.headers && req.headers.authorization) {
+      // Handle both "Bearer TOKEN" format and just "TOKEN" format
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      } else {
+        token = authHeader;
+      }
+    }
 
     if (!token) {
       return res.status(401).json({ message: 'Accesul interzis. Autentificarea este necesară.' });
     }
-
-    // Verify token
-    const decoded = jwt.verify(token, jwtConfig.secret);
+      
+    // Verify token - declare outside to make it available after the try block
+    let decoded = jwt.verify(token, jwtConfig.secret);
     
     // Attach user data to the request
     req.user = decoded;
@@ -46,7 +62,7 @@ const authorizeRoles = (roles) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Autentificarea este necesară' });
     }
-
+    
     // Convert single role to array
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
     
