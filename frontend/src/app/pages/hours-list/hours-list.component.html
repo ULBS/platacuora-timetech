@@ -1,1 +1,113 @@
-<p>hours-list works!</p>
+<div class="container mt-4">
+  <h3>Listă Ore Didactice</h3>
+
+  <form [formGroup]="hoursForm" (ngSubmit)="submitForm()">
+    <div *ngIf="errorMessages.length" class="alert alert-danger">
+      <ul>
+        <li *ngFor="let err of errorMessages">{{ err }}</li>
+      </ul>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+       <thead>
+  <tr>
+    <th>Nr. post</th>
+    <th>Grad post</th>
+    <th>Curs</th>
+    <th>Seminar</th>
+    <th>Laborator</th>
+    <th>Proiect</th>
+    <th>Tip activitate</th>
+    <th>Formație</th>
+    <th>Zi</th>
+    <th>Par/Impar</th>
+    <th>Disciplină</th> 
+    <th>Săptămână specială</th>
+    <th>Note</th>
+    <th>Facultate</th>
+    <th>Departament</th>
+    <th>An academic</th>
+    <th>Semestru</th>
+    <th>Ore totale</th>
+    <th>Acțiuni</th>
+  </tr>
+</thead>
+<tbody formArrayName="hours">
+  <tr *ngFor="let row of hours.controls; let i = index" [formGroupName]="i">
+    <td><input type="number" class="form-control" formControlName="postNumber" /></td>
+    <td>
+      <select class="form-control" formControlName="postGrade">
+        <option>Prof</option>
+        <option>Conf</option>
+        <option>Lect</option>
+        <option>Asist</option>
+        <option>Drd</option>
+      </select>
+    </td>
+    <td><input type="number" class="form-control" formControlName="courseHours" /></td>
+    <td><input type="number" class="form-control" formControlName="seminarHours" /></td>
+    <td><input type="number" class="form-control" formControlName="labHours" /></td>
+    <td><input type="number" class="form-control" formControlName="projectHours" /></td>
+    <td>
+      <select class="form-control" formControlName="activityType">
+        <option>LR</option>
+        <option>LE</option>
+        <option>MR</option>
+        <option>ME</option>
+      </select>
+    </td>
+    <td><input class="form-control" formControlName="group" /></td>
+    <td>
+      <select formControlName="dayOfWeek" class="form-control day-select">
+        <option>Luni</option>
+        <option>Marti</option>
+        <option>Miercuri</option>
+        <option>Joi</option>
+        <option>Vineri</option>
+        <option>Sambata</option>
+        <option>Duminica</option>
+      </select>
+    </td>
+    <td>
+      <select class="form-control" formControlName="oddEven">
+        <option value="">Toate</option>
+        <option value="Par">Par</option>
+        <option value="Impar">Impar</option>
+      </select>
+    </td>
+    <td><input class="form-control" formControlName="disciplineName" /></td> 
+    <td>
+  <select class="form-control" formControlName="specialWeek">
+    <option value="">—</option> 
+    <option *ngFor="let week of specialWeeks" [value]="week">{{ week }}</option>
+  </select>
+</td>
+
+    <td><input class="form-control" formControlName="notes" /></td>
+    <td><input class="form-control" formControlName="faculty" /></td>
+    <td><input class="form-control" formControlName="department" /></td>
+    <td><input class="form-control" formControlName="academicYear" placeholder="ex: 2024/2025" /></td>
+    <td>
+  <select class="form-control" formControlName="semester">
+    <option [value]="1">1</option>
+    <option [value]="2">2</option>
+  </select>
+</td>
+   <td>
+  <input class="form-control" formControlName="totalHours" placeholder="Ore totale" />
+</td>
+    <td>
+      <button type="button" (click)="removeRow(i)" class="btn btn-danger btn-sm">🗑️</button>
+    </td>
+ 
+  </tr>
+</tbody>
+
+      </table>
+    </div>
+
+    <button type="button" class="btn btn-secondary mt-3" (click)="addRow()">Adaugă rând</button>
+    <button type="submit" class="btn btn-primary mt-3">Salvează</button>
+  </form>
+</div>
