@@ -51,17 +51,22 @@ export class CalendarComponent implements OnInit {
   validateDates(): boolean {
     const start = new Date(this.startDate);
     const end = new Date(this.endDate);
-    
+
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       alert('Datele introduse nu sunt valide.');
       return false;
     }
-    
+
     if (start > end) {
       alert('Data de început trebuie să fie înainte de data de sfârșit.');
       return false;
     }
-    
+
+    if (start.getFullYear() !== end.getFullYear() || start.getMonth() !== end.getMonth()) {
+      alert('Calendarul poate fi generat doar pentru o singură lună calendaristică.');
+      return false;
+    }
+
     return true;
   }
 
