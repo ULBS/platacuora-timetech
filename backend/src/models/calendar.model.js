@@ -126,13 +126,14 @@ calendarSchema.statics.importHolidays = async function(year) {
 
     const holidays = await response.json();
 
-    // Map the response to the desired format
-    return holidays.map(holiday => ({
-      date: new Date(holiday.date),
-      isWorkingDay: false,
-      isHoliday: true,
-      holidayName: holiday.name
-    }));
+    return holidays.flatMap(holiday =>
+      holiday.date.map(d => ({
+        date: new Date(d.date),
+        isWorkingDay: false,
+        isHoliday: true,
+        holidayName: holiday.name
+      }))
+    );
   } catch (error) {
     console.error('Error importing holidays:', error);
     throw error;

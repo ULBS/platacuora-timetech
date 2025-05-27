@@ -1,6 +1,5 @@
 // routes/user.routes.js
 const express = require('express');
-const router = express.Router();
 const userCtrl = require('../controllers/userController');
 const { authMiddleware, authorizeRoles } = require('../middleware/auth.middleware');
 
