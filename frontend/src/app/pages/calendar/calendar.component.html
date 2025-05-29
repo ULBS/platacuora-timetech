@@ -1,1 +1,106 @@
-<p>calendar works!</p>
+<div class="calendar-container">
+  <div class="calendar-header">
+    <h1>Calendar - Propunere Date</h1>
+  </div>
+  
+  <div class="date-selection-form">
+    <div class="form-group">
+      <label for="startDate">Data de început:</label>
+      <input 
+        type="date" 
+        id="startDate" 
+        name="startDate" 
+        [(ngModel)]="startDate" 
+        [min]="minDate" 
+        [max]="maxDate" 
+        class="form-control"
+      />
+    </div>
+    
+    <div class="form-group">
+      <label for="endDate">Data de sfârșit:</label>
+      <input 
+        type="date" 
+        id="endDate" 
+        name="endDate" 
+        [(ngModel)]="endDate" 
+        [min]="minDate" 
+        [max]="maxDate" 
+        class="form-control"
+      />
+    </div>
+    
+    <button type="button" (click)="generateDates()" class="btn-propose" [disabled]="isLoading">
+      {{ isLoading ? 'Se procesează...' : 'Propune date' }}
+    </button>
+  </div>
+  
+  <div class="loading-indicator" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Se verifică zilele lucrătoare...</p>
+  </div>
+  
+  <div class="dates-list" *ngIf="datesList.length > 0 && !isLoading">
+    <h2>Lista de date propuse</h2>
+    
+    
+
+  
+  <div class="date-selection-form">
+    <div class="form-group">
+      <label for="startDate">Data de început:</label>
+      <input 
+        type="date" 
+        id="startDate" 
+        name="startDate" 
+        [(ngModel)]="startDate" 
+        [min]="minDate" 
+        [max]="maxDate" 
+        class="form-control"
+      />
+    </div>
+    
+    <div class="form-group">
+      <label for="endDate">Data de sfârșit:</label>
+      <input 
+        type="date" 
+        id="endDate" 
+        name="endDate" 
+        [(ngModel)]="endDate" 
+        [min]="minDate" 
+        [max]="maxDate" 
+        class="form-control"
+      />
+    </div>
+    
+    <button type="button" (click)="generateDates()" class="btn-propose">Propune date</button>
+  </div>
+  
+  <div class="dates-list" *ngIf="datesList.length > 0">
+    <h2>Lista de date propuse</h2>
+    
+    <table class="dates-table">
+      <thead>
+        <tr>
+          <th>Dată</th>
+          <th>Zi săptămână</th>
+          <th>Zi lucrătoare</th>
+          <th>Par/Impar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dateInfo of datesList">
+          <td>{{ dateInfo.date }}</td>
+          <td>{{ dateInfo.dayOfWeek }}</td>
+          <td>
+            <span *ngIf="dateInfo.isWorkingDay !== null">
+              {{ dateInfo.isWorkingDay ? 'Da' : ' ' }}
+            </span>
+            <span *ngIf="dateInfo.isWorkingDay === null">În curs de verificare...</span>
+          </td>
+          <td>{{ dateInfo.isEven ? 'Par' : 'Impar' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
