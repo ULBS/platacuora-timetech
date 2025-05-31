@@ -303,7 +303,8 @@ router.delete(
  * /api/calendar/import-holidays:
  *   post:
  *     summary: Import public holidays from external API (admin only)
- *     tags: [Calendars]
+ *     tags:
+ *       - Calendars
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -318,6 +319,9 @@ router.delete(
  *               year:
  *                 type: integer
  *                 description: Year to import holidays for
+ *               calendarId:
+ *                 type: Optional
+ *                 description: Optional calendar ID to associate holidays to
  *     responses:
  *       200:
  *         description: Holidays imported
