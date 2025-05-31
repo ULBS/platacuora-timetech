@@ -11,6 +11,8 @@ exports.createCalendar = async (req, res) => {
       startDate,
       endDate,
       title,
+      days,
+      status,
       holidayList,
       
     } = req.body;
@@ -23,6 +25,8 @@ exports.createCalendar = async (req, res) => {
       faculty,
       startDate:   new Date(startDate),
       endDate:     new Date(endDate),
+      days:        days || [],
+      status:      status || 'in_editare',
       title,
       holidayList: holidayList || [],
     });
@@ -94,21 +98,31 @@ exports.updateCalendar = async (req, res) => {
       faculty,
       startDate,
       endDate,
+      title,
+      days,
+      status,
       holidayList
     } = req.body;
 
+
+    // Numai acele campuri se schimba, care sunt trimise in body
+    const updates = {};
+    if (academicYear) updates.academicYear = academicYear;
+    if (semester) updates.semester = semester;
+    if (faculty) updates.faculty = faculty;
+    if (startDate) updates.startDate = new Date(startDate);
+    if (endDate) updates.endDate = new Date(endDate);
+    if (title) updates.title = title;
+    if (days) updates.days = days;
+    if (status) updates.status = status;
+    if (holidayList) updates.holidayList = holidayList;
+    
+    updates.updatedBy = req.user.id;
+    updates.updatedAt = Date.now();
+
     const calendar = await Calendar.findByIdAndUpdate(
       req.params.id,
-      {
-        academicYear,
-        semester,
-        faculty,
-        startDate: new Date(startDate),
-        endDate:   new Date(endDate),
-        holidayList: holidayList || [],
-        updatedBy: req.user.id,
-        updatedAt: Date.now()
-      },
+       updates,
       { new: true, runValidators: true }
     );
 
@@ -148,31 +162,82 @@ exports.importHolidays = async (req, res) => {
     if (!year) {
       return res.status(400).json({ message: 'Anul este obligatoriu' });
     }
+    const importedRaw = await Calendar.importHolidays(year);
 
-    const days = await Calendar.importHolidays(year);
+    if (!calendarId) {
+      return res.json({
+        importedDays: importedRaw.length,
+        days: importedRaw
+      });
+    }
+    const calendar = await Calendar.findById(calendarId);
+    if (!calendar) {
+      return res.status(404).json({ message: 'Calendar negăsit' });
+    }
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const existingDates = new Set(calendar.days.map(d => fmt(d.date)));
 
-    // Asa gandeam, calendarId ar fi folosit pentru a actualiza 
-    // holidayList-ul unui calendar existent, dar inca n-am reusit :))
+    const dayOfWeekNames = [
+      'Duminica','Luni','Marti','Miercuri','Joi','Vineri','Sambata'
+    ];
 
-    // if (calendarId) {
-    //   const calendar = await Calendar.findById(calendarId);
-    //   if (!calendar) {
-    //     return res.status(404).json({ message: 'Calendar negăsit' });
-    //   }
-    //   calendar.days = days;
-    //   await calendar.save();
-    //   return res.json({ calendar, importedDays: days.length });
-    // }
+    const newHolidays = importedRaw
+      .map(h => {
+        const dt = new Date(h.date);
+        return {
+          date:        dt,
+          dayOfWeek:   dayOfWeekNames[dt.getDay()],
+          isWorkingDay:false,
+          oddEven:     '',
+          semesterWeek:'',
+          isHoliday:   true,
+          holidayName: h.holidayName
+        };
+      })
+      .filter(hObj => {
+        const localStr = fmt(hObj.date);
+        if (existingDates.has(localStr)) {
+          return false;
+        }
+        existingDates.add(localStr);
+        return true;
+      });
 
-   return res.json({ importedDays: days.length, days });
+    if (newHolidays.length === 0) {
+      return res.json({
+        calendar,
+        importedDays: 0,
+        message: 'Nu au fost găsite sărbători noi de importat.'
+      });
+    }
+    const updates = {
+      days:       [...calendar.days, ...newHolidays],
+      updatedBy:  req.user.id,
+      updatedAt:  Date.now()
+    };
+    
+    const updatedCal = await Calendar.findByIdAndUpdate(
+      calendarId,
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    return res.json({
+      calendar:     updatedCal,
+      importedDays: newHolidays.length
+    });
   } catch (error) {
     console.error('Import holidays error:', error);
     return res.status(500).json({ message: 'Eroare de server' });
   }
 };
 
+
+
 /*
-Trebuie ceva (ex. daysOfWeek) care să fie setat în calendar înainte de a putea genera
+Mai incerc sa fac generarea calendarului
+
 exports.generateCalendar = async (req, res) => {
   try {
     const cal = await Calendar.findById(req.params.id);
@@ -207,7 +272,6 @@ exports.generateCalendar = async (req, res) => {
   }
 };
 */
-
 exports.exportToExcel = async (req, res) => {
   try {
     const cal = await Calendar.findById(req.params.id);
@@ -244,73 +308,9 @@ exports.exportToExcel = async (req, res) => {
 };
 
 /*
-Trebuie ceva (ex. daysOfWeek) care să fie setat în calendar înainte de a putea valida
+Cand reusesc sa fac generarea calendarului, rezolv si validarea
+
 exports.validateCalendar = async (req, res) => {
-  try {
-    const cal = await Calendar.findById(req.params.id);
-    if (!cal) {
-      return res.status(404).json({ message: 'Calendarul nu a fost găsit.' });
-    }
-
-    const { startDate, endDate, daysOfWeek, days } = cal;
-
-    // 1) Verificări preliminare
-    if (!Array.isArray(daysOfWeek)) {
-      return res.status(400).json({ message: 'Câmpul daysOfWeek nu este definit corect.' });
-    }
-    if (!Array.isArray(days) || days.length === 0) {
-      return res.status(400).json({ message: 'Nu există niciun element în days – generează mai întâi calendarul.' });
-    }
-
-    // 2) Calculează câte zile “așteptate” ar trebui să fie
-    let cursor = new Date(startDate);
-    let expectedDays = 0;
-    while (cursor <= endDate) {
-      if (daysOfWeek.includes(cursor.getDay())) {
-        expectedDays++;
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    // 3) Formatare locală (fără ISO/UTC)
-    const pad = n => String(n).padStart(2,'0');
-    const fmt = d =>
-      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-
-    // 4) Date unice și rapoarte de consistență
-    const uniqueLocal = new Set(days.map(d => {
-      if (!(d.date instanceof Date)) {
-        throw new Error(`Data invalidă în days: ${d.date}`);
-      }
-      return fmt(d.date);
-    }));
-
-    const duplicateRows = days.length - uniqueLocal.size;
-    const missingDays   = Math.max(0, expectedDays - uniqueLocal.size);
-
-    // 5) Zile generate care nu corespund zilelor de week şi cele în afara intervalului
-    const wrongWeekdays = days
-      .filter(d => !daysOfWeek.includes(d.date.getDay()))
-      .map(d => fmt(d.date));
-
-    const outOfRange = days
-      .filter(d => d.date < startDate || d.date > endDate)
-      .map(d => fmt(d.date));
-
-    return res.json({
-      totalRows:     days.length,
-      expectedDays,
-      missingDays,
-      duplicateRows,
-      wrongWeekdays,
-      outOfRange,
-    });
-
-  } catch (err) {
-    // Afișează eroarea reală ca să poți debuga
-    console.error('Eroare validateCalendar:', err);
-    res.status(500).json({ message: err.message });
-  }
 };
 */
 
