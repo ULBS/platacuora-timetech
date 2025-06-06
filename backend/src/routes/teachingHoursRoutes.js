@@ -528,11 +528,4 @@ router.put('/:id/verify', authMiddleware, authorizeRoles('admin'),
  *         description: Server error
  */
 router.put('/:id/reject', authMiddleware, authorizeRoles('admin'), teachingHoursController.rejectTeachingHours);
-
-
-
-
-
-
-
 module.exports = router;
