@@ -6,6 +6,9 @@ import { CalendarService, HolidayResponse } from '../../../core/services/calenda
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+
+
+
 interface DateInfo {
   date: string;
   dayOfWeek: string;
@@ -27,6 +30,8 @@ export class CalendarComponent implements OnInit {
   maxDate: string = '2050-12-31';
   datesList: DateInfo[] = [];
   isLoading: boolean = false;
+  user: any = null; 
+
   
   daysOfWeek: string[] = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
   
@@ -39,6 +44,11 @@ export class CalendarComponent implements OnInit {
 
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     this.endDate = this.formatDateForInput(lastDayOfMonth);
+   
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      this.user = JSON.parse(savedUser);
+    }
   }
 
   formatDateForInput(date: Date): string {
@@ -148,4 +158,26 @@ export class CalendarComponent implements OnInit {
       this.isLoading = false;
     });
   }
+
+ async generatePDFDeclaration() {
+  const element = document.getElementById('pdf-content');
+  if (!element) return;
+
+  element.style.display = 'block';
+
+  const html2pdf = await import('html2pdf.js');
+  const opt = {
+    margin: 10,
+    filename: 'declaratie-activitati-didactice.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  };
+
+  await html2pdf.default().set(opt).from(element).save();
+
+  element.style.display = 'none';
+}
+
+
 }

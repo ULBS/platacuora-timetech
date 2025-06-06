@@ -1,33 +1,77 @@
-<div class="profile-container">
-  <div class="profile-header">
-    <h1>Hello, {{ user?.name || 'User' }}!</h1>
-  </div>
-  
-  <div class="profile-content" *ngIf="user">
-    <div class="profile-section">
-      <h2>Profile Details</h2>
-      <div class="profile-info">
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <div>
-          <label for="tipuri"><strong>Tip:</strong></label>
-          <select id="tipuri" [(ngModel)]="user.tip" name="tip" class="tipuri-dropdown">
-            <option *ngFor="let tip of tipuri" [value]="tip">{{ tip }}</option>
-          </select>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Utilizator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    
+</head>
+<body>
+    <div class="container">
+        <div *ngIf="user" class="profile-container">
+      
+            <div class="profile-header">
+                <h1 class="display-4" id="welcomeMessage">Bună ziua, {{user.declarant}}!</h1>
+            </div>
+
+            <div class="profile-section">
+                <h2 class="mb-4 " style="color: #0B2F63;">
+                    <i class="fas fa-user-circle me-2"></i>Detalii Profil
+                </h2>
+                
+                <form id="profileForm">
+                    <div class="row">
+                       
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="tip" class="form-label fw-bold">Tip:</label>
+                            <select [(ngModel)]="user.tip" name="tip" class="form-select">
+                              <option *ngFor="let tip of tipuri" [value]="tip">{{tip}}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="declarant" class="form-label fw-bold">Declarant (titlu, prenume, nume):</label>
+                        <input type="text" class="form-control" id="declarant" name="declarant" [(ngModel)]="user.declarant" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="directorDepartament" class="form-label fw-bold">Director Departament (titlu, prenume, nume):</label>
+                        <input type="text" class="form-control" id="directorDepartament" name="directorDepartament" [(ngModel)]="user.directorDepartament" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="decan" class="form-label fw-bold">Decan (titlu, prenume, nume):</label>
+                        <input type="text" class="form-control" id="decan" name="decan" [(ngModel)]="user.decan" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="universitate" class="form-label fw-bold">Universitatea (denumire completă):</label>
+                        <input type="text" class="form-control" id="universitate" name="universitate" [(ngModel)]="user.universitate" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="facultate" class="form-label fw-bold">Facultatea (denumire completă):</label>
+                        <input type="text" class="form-control" id="facultate" name="facultate" [(ngModel)]="user.facultate" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="departament" class="form-label fw-bold">Departamentul (denumire completă):</label>
+                        <input type="text" class="form-control" id="departament" name="departament" [(ngModel)]="user.departament" required>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                     
+                      <button type="button" class="btn btn-success btn-lg"  (click)="saveProfile()">Salvează</button>  
+                        
+                    </div>
+                </form>
+              </div>                   
         </div>
-        <p><label for="input1"><strong>Declarant (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input1" type="text" [(ngModel)]="user.declarant" name="declarant" class="form-control" /></p>
-        <p><label for="input2"><strong>Director Departament (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input2" type="text" [(ngModel)]="user.directorDepartament" name="directorDepartament" class="form-control" /></p>
-        <p><label for="input3"><strong>Decan (titlu, prenume, nume):</strong></label></p>
-        <p><input id="input3" type="text" [(ngModel)]="user.decan" name="decan" class="form-control" /></p>
-        <p><label for="input4"><strong>Universitatea (denumire completă):</strong></label></p>
-        <p><input id="input4" type="text" [(ngModel)]="user.universitate" name="universitate" class="form-control" /></p>
-        <p><label for="input5"><strong>Facultatea (denumire completă):</strong></label></p>
-        <p><input id="input5" type="text" [(ngModel)]="user.facultate" name="facultate" class="form-control" /></p>
-        <p><label for="input6"><strong>Departamentul (denumire completă):</strong></label></p>
-        <p><input id="input6" type="text" [(ngModel)]="user.departament" name="departament" class="form-control" /></p>
-        <button (click)="saveProfile()">Salvează</button>
-      </div>
     </div>
-  </div>
-</div>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
