@@ -126,7 +126,7 @@ router.post(
   '/',
   authMiddleware,
   authorizeRoles('admin'),
-  calendarCtrl.createCalendar    
+  calendarCtrl.createCalendar
 );
 
 /**
@@ -345,38 +345,6 @@ router.post(
   calendarCtrl.importHolidays
 );
 
-/**
- * @swagger
- * /api/calendar/{id}/generate:
- *   post:
- *     summary: -NU FUNCTIONEAZA INCA- Auto-generate calendar days (admin only)
- *     tags: [Calendars]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Calendar ID
- *     responses:
- *       200:
- *         description: Days generated
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Calendar negăsit
- *       500:
- *         description: Server error
- */
-
-/**
- * @route  POST /api/calendar/:id/generate
- * @desc   Generate calendar
- * @access Private/Admin
-*/
-
 /*
 router.post(
   '/:id/generate',
@@ -424,51 +392,10 @@ router.post(
  */
 router.get(
   '/:id/export',
-  authMiddleware, 
+  authMiddleware,
   authorizeRoles('admin'),
   calendarCtrl.exportToExcel
 );
-
-/**
- * @swagger
- * /api/calendar/{id}/validate:
- *   post:
- *     summary: -NU FUNCTIONEAZA INCA- Validate calendar consistency (admin only)
- *     tags: [Calendars]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Calendar ID
- *     responses:
- *       200:
- *         description: Validation results
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Calendar negăsit
- *       500:
- *         description: Server error
- */
-
-/**
- * @route   POST /api/calendar/:id/validate
- * @desc    Validate calendar consistency
- * @access  Private/Admin 
- */
-
-/*
-router.post(
-  '/:id/validate',
-  authMiddleware, 
-  authorizeRoles('admin'),
-  calendarCtrl.validateCalendar
-);
-*/
 
 /**
  * @swagger
@@ -523,7 +450,7 @@ router.post(
  */
 router.post(
   '/:id/special-days',
-  authMiddleware, 
+  authMiddleware,
   authorizeRoles('admin'),
   calendarCtrl.addSpecialDays
 );
@@ -579,15 +506,91 @@ router.get(
 
 
 
+/**
+ * @swagger
+ * /api/calendar/{id}/generate:
+ *   post:
+ *     summary: Generate the daily calendar for a semester
+ *     tags: [Calendars]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Calendar ID
+ *     responses:
+ *       200:
+ *         description: Calendar generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 generated:
+ *                   type: integer
+ *                   description: Number of days generated
+ *                 calendar:
+ *                   $ref: '#/components/schemas/Calendar'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Calendar not found or missing semester config
+ *       500:
+ *         description: Server error
+ */
 router.post(
-  '/:id/generate', 
+  '/:id/generate',
+  authMiddleware,
   calendarCtrl.generateCalendar
 );
 
 
+/**
+ * @swagger
+ * /api/calendar/{id}/verify:
+ *   post:
+ *     summary: Verify that a generated calendar is complete & consistent
+ *     tags: [Calendars]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Calendar ID
+ *     responses:
+ *       200:
+ *         description: Calendar verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 calendar:
+ *                   $ref: '#/components/schemas/Calendar'
+ *       400:
+ *         description: Calendar invalid — returns detailed `errors` object
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Calendar or semester config not found
+ *       500:
+ *         description: Server error
+ */
 router.post(
   '/:id/verify',
-   calendarCtrl.verifyCalendar);
+  authMiddleware,
+  calendarCtrl.verifyCalendar
+);
 
 
 module.exports = router;
