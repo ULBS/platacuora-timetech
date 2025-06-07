@@ -578,4 +578,16 @@ router.get(
 );
 
 
+
+router.post(
+  '/:id/generate', 
+  calendarCtrl.generateCalendar
+);
+
+
+router.post(
+  '/:id/verify',
+   calendarCtrl.verifyCalendar);
+
+
 module.exports = router;

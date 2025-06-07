@@ -1,5 +1,8 @@
 const Calendar = require('../models/calendar.model');
+const SemesterConfig = require('../models/semester-config.model');
+const TeachingHours  = require('../models/teaching-hours.model');
 const xlsx = require('xlsx');
+
 
 
 exports.createCalendar = async (req, res) => {
@@ -233,45 +236,133 @@ exports.importHolidays = async (req, res) => {
   }
 };
 
-
-
-/*
-Mai incerc sa fac generarea calendarului
-
 exports.generateCalendar = async (req, res) => {
   try {
     const cal = await Calendar.findById(req.params.id);
-    if (!cal) return res.status(404).json({ message: 'Calendar negăsit' });
+    if (!cal) {
+      return res.status(404).json({ message: 'Calendar negăsit' });
+    }
 
-    const days     = [];
-    let cursor     = new Date(cal.startDate);
-    let weekIndex  = 1;
-    while (cursor <= cal.endDate) {
-      const dow = cursor.getDay(); // 0=Duminica .. 6=Sambata
-      if (cal.daysOfWeek.includes(dow)) {
-        days.push({
-          date:         new Date(cursor),
-          dayOfWeek:    ['Duminica','Luni','Marti','Miercuri','Joi','Vineri','Sambata'][dow],
-          isWorkingDay: true,
-          oddEven:      (weekIndex % 2) ? 'Impar' : 'Par',
-          semesterWeek: `S${String(weekIndex).padStart(2,'0')}`,
-          isHoliday:    false,
-          holidayName:  ''
-        });
+    const cfg = await SemesterConfig.findOne({
+      academicYear: cal.academicYear,
+      semester:     cal.semester,
+      faculty:      cal.faculty,
+      status:       'active' 
+    });
+
+    if (!cfg) {
+      return res.status(404).json({
+        message: 'Nu există o configurație de semestru activă pentru acest calendar'
+      });
+    }
+
+    const teachingHoursList = await TeachingHours.find({
+      academicYear: cal.academicYear,
+      semester:     cal.semester,
+      faculty:      cal.faculty,
+      status:       { $in: ['verificat', 'aprobat'] }
+    });
+
+    const days = [];
+    let cursor = new Date(cal.startDate);
+    cursor.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(cal.endDate);
+    endDate.setHours(0, 0, 0, 0);
+
+    while (cursor <= endDate) {
+      const dayIndex = cursor.getDay(); // 0 = Duminica, 1 = Luni ... 6 = Sâmbătă
+      const dayNames = ['Duminica', 'Luni', 'Marti', 'Miercuri', 'Joi', 'Vineri', 'Sambata'];
+      const dayName  = dayNames[dayIndex];
+
+      const weekInfo = getWeekInfoFromConfig(cfg, cursor);
+      if (!weekInfo) {
+        cursor.setDate(cursor.getDate() + 1);
+        continue;
       }
-      if (dow === 0) weekIndex++;
+
+      const matchedHours = [];
+      teachingHoursList.forEach(record => {
+        if (record.isSpecial) {
+          if (weekInfo.weekNumber === record.specialWeek &&
+              record.dayOfWeek === dayName) {
+            matchedHours.push(record);
+          }
+        } else {
+          if ((!record.oddEven || record.oddEven === weekInfo.weekType) &&
+               record.dayOfWeek === dayName) {
+            matchedHours.push(record);
+          }
+        }
+      });
+      const calendarDay = {
+        date:        new Date(cursor),
+        dayOfWeek:   dayName,
+        isWorkingDay: matchedHours.length > 0,      
+        oddEven:      weekInfo.weekType,             
+        semesterWeek: weekInfo.weekNumber,             
+        isHoliday:    false,                       
+        holidayName:  ''
+      };
+
+      days.push(calendarDay);
+
       cursor.setDate(cursor.getDate() + 1);
     }
 
     cal.days = days;
     await cal.save();
-    res.json({ generated: days.length, calendar: cal });
+
+    return res.json({
+      generated: days.length,
+      calendar:  cal
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
+    console.error('Eroare la generateCalendar:', err);
+    return res.status(500).json({ message: err.message });
   }
 };
-*/
+
+
+function getWeekInfoFromConfig(cfg, date) {
+  for (const week of cfg.weeks) {
+    const wStart = new Date(week.startDate);
+    const wEnd   = new Date(week.startDate);
+    wEnd.setDate(wEnd.getDate() + 6);
+
+    if (date >= wStart && date <= wEnd) {
+      return {
+        weekNumber: week.weekNumber,
+        weekType:   week.weekType,
+        isSpecial:  false,
+        startDate:  wStart,
+        endDate:    wEnd
+      };
+    }
+  }
+
+  if (cfg.isMedicine) {
+    for (const special of cfg.specialWeeks) {
+      const sStart = new Date(special.startDate);
+      const sEnd   = new Date(special.startDate);
+      sEnd.setDate(sEnd.getDate() + 6);
+
+      if (date >= sStart && date <= sEnd) {
+        return {
+          weekNumber: special.weekNumber,
+          weekType:   special.weekType,
+          isSpecial:  true,
+          startDate:  sStart,
+          endDate:    sEnd
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 exports.exportToExcel = async (req, res) => {
   try {
     const cal = await Calendar.findById(req.params.id);
@@ -307,12 +398,137 @@ exports.exportToExcel = async (req, res) => {
   }
 };
 
-/*
-Cand reusesc sa fac generarea calendarului, rezolv si validarea
 
-exports.validateCalendar = async (req, res) => {
+exports.verifyCalendar = async (req, res) => {
+  try {
+    const cal = await Calendar.findById(req.params.id);
+    if (!cal) {
+      return res.status(404).json({ message: 'Calendar negăsit' });
+    }
+
+    const cfg = await SemesterConfig.findOne({
+      academicYear: cal.academicYear,
+      semester:     cal.semester,
+      faculty:      cal.faculty,
+      status:       'active'
+    });
+
+    if (!cfg) {
+      return res.status(404).json({
+        message: 'Nu există o configurație de semestru activă pentru acest calendar'
+      });
+    }
+
+    const startDate = new Date(cal.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(cal.endDate);
+    endDate.setHours(0, 0, 0, 0);
+
+    const daysMap = {};
+
+    if (Array.isArray(cal.days)) {
+      cal.days.forEach((dayObj, idx) => {
+        if (!dayObj || !dayObj.date) {
+          console.warn(` Atenție: cal.days[${idx}] nu are proprietatea 'date'. Obiect invalid:`, dayObj);
+          return;
+        }
+        const d = new Date(dayObj.date);
+        if (isNaN(d.getTime())) {
+          console.warn(` Atenție: cal.days[${idx}].date nu este o dată validă:`, dayObj.date);
+          return;
+        }
+        const key = d.toISOString().substring(0, 10);
+        if (!Array.isArray(daysMap[key])) {
+          daysMap[key] = [];
+        }
+        daysMap[key].push(dayObj);
+      });
+    } else {
+      return res.status(400).json({
+        message: 'calendar.days nu este un array valid'
+      });
+    }
+
+    const errors = {
+      missingDays:   [],
+      duplicateDays: [],
+      weekMismatch:  []
+    };
+
+    Object.entries(daysMap).forEach(([key, arr]) => {
+      if (Array.isArray(arr) && arr.length > 1) {
+        errors.duplicateDays.push({
+          date:  key,
+          count: arr.length
+        });
+      }
+    });
+
+    let cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      const key = cursor.toISOString().substring(0, 10);
+      const foundEntries = Array.isArray(daysMap[key]) ? daysMap[key] : [];
+
+      if (foundEntries.length === 0) {
+        errors.missingDays.push(key);
+      } else {
+        for (let i = 0; i < foundEntries.length; i++) {
+          const dayObj = foundEntries[i];
+          const actualDate = new Date(dayObj.date);
+          actualDate.setHours(0, 0, 0, 0);
+          const weekInfo = getWeekInfoFromConfig(cfg, actualDate);
+
+          if (!weekInfo) {
+            errors.weekMismatch.push({
+              date:  key,
+              issue: 'Data nu cade în nicio săptămână definită în config'
+            });
+          } else {
+            if (dayObj.semesterWeek !== weekInfo.weekNumber) {
+              errors.weekMismatch.push({
+                date:     key,
+                field:    'semesterWeek',
+                expected: weekInfo.weekNumber,
+                actual:   dayObj.semesterWeek
+              });
+            }
+            if (dayObj.oddEven !== weekInfo.weekType) {
+              errors.weekMismatch.push({
+                date:     key,
+                field:    'oddEven',
+                expected: weekInfo.weekType,
+                actual:   dayObj.oddEven
+              });
+            }
+          }
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (
+      errors.missingDays.length === 0 &&
+      errors.duplicateDays.length === 0 &&
+      errors.weekMismatch.length === 0
+    ) {
+      cal.status = 'verificat';
+      await cal.save();
+      return res.json({
+        message:  'Calendar verificat cu succes',
+        calendar: cal
+      });
+    }
+
+    return res.status(400).json({
+      message: 'Calendar nevalid: au fost găsite erori',
+      errors
+    });
+
+  } catch (err) {
+    console.error('Eroare la verifyCalendar:', err);
+    return res.status(500).json({ message: err.message });
+  }
 };
-*/
 
 
 exports.addSpecialDays = async (req, res) => {
