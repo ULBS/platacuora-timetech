@@ -94,3 +94,101 @@ select.day-select {
     font-size: 0.9rem;
   }
 }
+
+
+.row.mb-3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  input, select {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .btn-success {
+    background-color: #28a745;
+    border: none;
+    color: white;
+
+    &:hover {
+      background-color: #218838;
+    }
+  }
+}
+.filters-bar,
+.mass-edit-bar {
+  justify-content: center;
+}
+
+.filters-bar input,
+.filters-bar select,
+.mass-edit-bar input,
+.mass-edit-bar select {
+  min-width: 180px;
+}
+
+.btn-outline-primary {
+  border-color: #007bff;
+  color: #007bff;
+  &:hover {
+    background-color: #007bff;
+    color: white;
+  }
+}
+
+.btn-outline-success {
+  border-color: #28a745;
+  color: #28a745;
+  &:hover {
+    background-color: #28a745;
+    color: white;
+  }
+}
+.filter-bar {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.filter-bar input,
+.filter-bar select {
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.mass-edit-bar {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
+
+  input, select {
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  button {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+.input-sm {
+  max-width: 50px !important;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.input-lg {
+  min-width: 90px !important;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
