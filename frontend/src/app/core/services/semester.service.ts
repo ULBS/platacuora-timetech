@@ -25,16 +25,24 @@ export interface SemesterConfig {
   providedIn: 'root',
 })
 export class SemesterService {
-  private baseUrl = '/api/semester';
+  private baseUrl = 'http://localhost:5000/api/semester';
 
-  private getAuthHeaders(): HttpHeaders {
-    const user = localStorage.getItem('user');
-    const token = user ? JSON.parse(user).token : null;
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    });
-  }
+
+ private getAuthHeaders(): HttpHeaders {
+  const user = localStorage.getItem('currentUser');
+  const token = user ? JSON.parse(user).token : null;
+  
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  });
+
+  console.log('Token folosit:', token);
+  console.log('Headers generate:', headers);
+
+  return headers;
+}
+
 
   constructor(private http: HttpClient) {}
 
@@ -122,4 +130,10 @@ export class SemesterService {
       headers: this.getAuthHeaders()
     });
   }
+
+
+  updateSemesterConfig(configId: string, data: any) {
+  return this.http.put(`/api/semester/${configId}`, data);
+}
+
 }

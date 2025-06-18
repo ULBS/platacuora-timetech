@@ -29,6 +29,9 @@
       </button>
     </div>
 
+
+    
+
     <div class="form-group">
       <label for="endDate">Data de sfârșit:</label>
       <input
@@ -85,13 +88,86 @@
     </table>
   </div>
 
-  <!-- Semester Structure Configuration -->
-  <div class="semester-structure-section">
-    <h2>🗓️ Configurare Structură Semestru</h2>
 
-    <form (ngSubmit)="saveSemesterStructure()" #semesterForm="ngForm">
+ <div class="calendar-container">
+  <div class="calendar-header">
+    <h1>📅 Calendar - Structură Semestru Editabilă</h1>
+  </div>
+
+  <!-- Formular încărcare calendar -->
+  <form (ngSubmit)="loadSemesterCalendar()" #calendarForm="ngForm" class="form-load-calendar">
+    <div class="form-group">
+      <label for="academicYear">An academic:</label>
+      <input type="text" id="academicYear" name="academicYear"
+             [(ngModel)]="selectedAcademicYear"
+             placeholder="Ex: 2024/2025"
+             pattern="\\d{4}/\\d{4}" required />
+    </div>
+    <div class="form-group">
+      <label for="semesterNumber">Număr semestru:</label>
+      <input type="number" id="semesterNumber" name="semesterNumber"
+             [(ngModel)]="selectedSemesterNumber"
+             min="1" max="2" required />
+    </div>
+    <button type="submit" class="btn-primary">Încarcă Calendar</button>
+  </form>
+
+  <!-- Calendar încărcat și editabil -->
+  <div *ngIf="loadedSemester" class="calendar-editable">
+    <h3>Structură pentru {{ loadedSemester.academicYear }} - Semestru {{ loadedSemester.semester }}</h3>
+
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Săptămână</th>
+          <th>Dată început</th>
+          <th>Tip săptămână</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let week of loadedSemester.weeks">
+          <td><input type="text" [(ngModel)]="week.weekNumber" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="week.startDate" class="form-control" /></td>
+          <td>
+            <select [(ngModel)]="week.weekType" class="form-control">
+              <option value="Par">Par</option>
+              <option value="Impar">Impar</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Vacanțe / Perioade speciale</h4>
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Nume</th>
+          <th>Început</th>
+          <th>Sfârșit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vac of loadedSemester.specialWeeks">
+          <td><input type="text" [(ngModel)]="vac.name" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="vac.startDate" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="vac.endDate" class="form-control" /></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button (click)="saveEditedSemester()" class="btn-success">💾 Salvează Modificările</button>
+  </div>
+</div>
+
+
+  <!-- Semester Structure Configuration -->
+ <div class="semester-structure-section">
+    <h2>🗓️ Configurare Structură Semestru</h2>
+ 
+   <form (ngSubmit)="saveSemesterStructure()" #semesterForm="ngForm">
       <div class="form-group">
-        <label for="semesterStart">Început semestru:</label>
+        <label for="semesterStart">Data de început semestru:</label>
         <input
           type="date"
           id="semesterStart"
@@ -102,7 +178,7 @@
       </div>
 
       <div class="form-group">
-        <label for="semesterEnd">Sfârșit semestru:</label>
+        <label for="semesterEnd">Data de sfârșit semestru:</label>
         <input
           type="date"
           id="semesterEnd"
@@ -112,25 +188,36 @@
         />
       </div>
 
+      <div class="form-group">
+        <label for="semesterNumber">Număr semestru:</label>
+        <input
+          type="number"
+          id="semesterNumber"
+          name="semesterNumber"
+          [(ngModel)]="semesterNumber"
+          min="1"
+          max="2"
+          required
+        />
+      </div>
+
       <div class="form-group checkbox">
         <label>
           <input
             type="checkbox"
-            name="oddWeekStart"
-            [(ngModel)]="oddWeekStart"
+            name="isMedicine"
+            [(ngModel)]="isMedicine"
           />
-          Prima săptămână este impară
+          Este pentru Facultatea de Medicină
         </label>
       </div>
 
       <div class="form-actions">
-        <button type="button" (click)="generateWeeks()" class="btn-primary">
-          Generează săptămâni
+        <button type="submit" class="btn-success">
+          Salvează Configurația și Generează Săptămâni
         </button>
-        <button type="submit" class="btn-success">Salvează Configurația</button>
       </div>
     </form>
-
     <hr />
 
     <h3>🎯 Adăugare Vacanță / Perioadă Specială</h3>
@@ -302,7 +389,7 @@
         </div>
       </div>
     </body>
-  </div>
+  </div>                                                                                                                                                                  
 </div>
 
 <style>

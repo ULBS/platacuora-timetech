@@ -26,9 +26,12 @@ export class CalendarComponent implements OnInit {
   endDate: string = '';
   minDate: string = '2025-01-01';
   maxDate: string = '2050-12-31';
+    semesterNumber: number = 1;         
+  isMedicine: boolean = false; 
   datesList: DateInfo[] = [];
   isLoading: boolean = false;
-
+  selectedAcademicYear: string = '';
+  selectedSemesterNumber: number = 1;
   user: any = null;
   semesterStart: string = '';
   semesterEnd: string = '';
@@ -49,18 +52,22 @@ export class CalendarComponent implements OnInit {
     private semesterService: SemesterService
   ) {}
 
-  ngOnInit(): void {
-    const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    this.startDate = this.formatDateForInput(firstDayOfMonth);
-    this.endDate = this.formatDateForInput(lastDayOfMonth);
-
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      this.user = JSON.parse(savedUser);
-    }
+ngOnInit(): void {
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    this.user = JSON.parse(savedUser);
+  } else {
+    this.user = {
+      universitate: 'Universitate Test',
+      facultate: 'Facultate Test',
+      departament: 'Departament Test',
+      declarant: 'Declarant Test',
+      decan: 'Decan Test',
+      directorDepartament: 'Director Test'
+    };
   }
+}
+
 
   formatDateForInput(date: Date): string {
     const year = date.getFullYear();
@@ -146,35 +153,167 @@ export class CalendarComponent implements OnInit {
   }
 
  saveSemesterStructure() {
-  const startYear = new Date(this.semesterStart).getFullYear();
-  const academicYear = `${startYear}/${startYear + 1}`.replace(/\s+/g, '');
+  const start = new Date(this.semesterStart);
+  const end = new Date(this.semesterEnd);
 
+  if (start >= end) {
+    alert('Data de început trebuie să fie înainte de data de sfârșit');
+    return;
+  }
+
+  // Deducerea anului academic
+  let academicYear: string;
+  if (start.getMonth() + 1 >= 1 && start.getMonth() + 1 <= 9) {
+    // Semestru începe între ianuarie-septembrie
+    academicYear = `${start.getFullYear() - 1}/${start.getFullYear()}`;
+  } else {
+    academicYear = `${start.getFullYear()}/${start.getFullYear() + 1}`;
+  }
 
   const config = {
     academicYear,
-    semester: 2,
+    semester: this.semesterNumber,
     faculty: this.user?.facultate || '',
     startDate: this.semesterStart,
     endDate: this.semesterEnd,
-    createdBy: this.user?.id || '68308cd4f1ae415dcb8fccbc' // fallback dummy ID
+    isMedicine: this.isMedicine
   };
 
-  console.log('TRIMIT:', config);
+  // Înainte să creăm, verificăm dacă există deja
+  this.semesterService.getConfigsByFaculty(config.faculty, academicYear, this.semesterNumber).subscribe(existing => {
+    if (existing.length > 0) {
+      alert('Configurația pentru acest semestru și an există deja!');
+      return;
+    }
 
-  this.semesterService.createConfig(config).subscribe({
-    next: (res) => {
-      console.log('RĂSPUNS backend:', res);
-      this.currentConfigId = res._id;
-      alert('Configurație salvată cu succes!');
-    },
-    error: (err) => {
-      console.error('Eroare backend:', err);
-      alert('Eroare la salvare: ' + (err.error?.message || err.message));
+    // Creare configurație
+    this.semesterService.createConfig(config).subscribe({
+      next: (res) => {
+        console.log('RĂSPUNS backend:', res);
+        this.currentConfigId = res._id;
+        alert('Configurație salvată cu succes!');
+
+        // Generăm automat săptămânile
+        this.generateWeeks();
+      },
+      error: (err) => {
+        console.error('Eroare detaliată backend:', err.error);
+        alert('Eroare la salvare: ' + (err.error?.message || err.message));
+      }
+    });
+  });
+} 
+
+calendarDays: {
+  date: Date | null;
+  weekType: string;
+  weekLabel: string;
+  isVacation: boolean;
+}[] = [];
+
+
+loadedSemester: any = null;
+
+loadSemesterCalendar() {
+  if (!this.selectedAcademicYear || !this.selectedSemesterNumber) {
+    alert('Completează anul academic și semestrul!');
+    return;
+  }
+
+  this.semesterService
+    .getConfigsByFaculty(this.user.facultate, this.selectedAcademicYear, this.selectedSemesterNumber)
+    .subscribe({
+      next: configs => {
+        if (configs.length === 0) {
+          alert('Nu există calendar pentru aceste criterii!');
+        } else {
+          // Datele din backend vin și se afișează în input-uri
+          this.loadedSemester = configs[0];
+
+          // Transform datele pentru input de tip date (dacă nu sunt deja în format ISO)
+          this.loadedSemester.weeks.forEach((w: any) => {
+            w.startDate = new Date(w.startDate).toISOString().split('T')[0];
+          });
+          this.loadedSemester.specialWeeks.forEach((v: any) => {
+            v.startDate = new Date(v.startDate).toISOString().split('T')[0];
+            v.endDate = new Date(v.endDate).toISOString().split('T')[0];
+          });
+        }
+      },
+      error: err => {
+        console.error('Eroare la încărcare:', err);
+        alert('Eroare la încărcare calendar!');
+      }
+    });
+}
+
+saveEditedSemester() {
+  if (!this.loadedSemester || !this.loadedSemester._id) {
+    alert('Calendarul nu este încărcat!');
+    return;
+  }
+
+  // Trimitem datele editate
+  this.semesterService.updateSemesterConfig(this.loadedSemester._id, {
+    weeks: this.loadedSemester.weeks,
+    specialWeeks: this.loadedSemester.specialWeeks
+  }).subscribe({
+    next: () => alert('Calendar salvat cu succes!'),
+    error: err => {
+      console.error('Eroare la salvare:', err);
+      alert('Eroare la salvare!');
     }
   });
 }
 
+  generateCalendarGrid(semesterData: any) {
+    const start = new Date(semesterData.startDate);
+    const end = new Date(semesterData.endDate);
+    const specialWeeks = semesterData.specialWeeks || [];
+    const weeks = semesterData.weeks || [];
 
+    this.calendarDays = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      const week = weeks.find((w: any) =>
+        new Date(w.startDate).toDateString() === current.toDateString()
+      );
+
+      const special = specialWeeks.find((v: any) => {
+        const vacStart = new Date(v.startDate);
+        const vacEnd = new Date(v.endDate);
+        return current >= vacStart && current <= vacEnd;
+      });
+
+      this.calendarDays.push({
+        date: new Date(current),
+        weekType: week ? week.weekType : '',
+        weekLabel: week ? week.weekNumber : '',
+        isVacation: !!special
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    const firstValid = this.calendarDays.find(day => day.date !== null);
+    if (firstValid && firstValid.date) {
+      const firstDay = firstValid.date.getDay();
+      const offset = (firstDay + 6) % 7; // Luni = 0
+      for (let i = 0; i < offset; i++) {
+        this.calendarDays.unshift({
+          date: null,
+          weekType: '',
+          weekLabel: '',
+          isVacation: false
+        });
+      }
+    }
+  }
+
+toDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
 
   generateWeeks() {
     if (!this.currentConfigId) {

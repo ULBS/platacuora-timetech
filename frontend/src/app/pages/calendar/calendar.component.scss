@@ -341,3 +341,138 @@
   cursor: pointer;
 }
 
+.semester-visualization-section {
+  margin-top: 30px;
+  padding: 20px;
+  background: #e9ecef;
+  border-radius: 5px;
+}
+
+.calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.calendar-table th,
+.calendar-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+.calendar-table th {
+  background: #007bff;
+  color: #fff;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 15px;
+}
+
+.calendar-day {
+  border: 1px solid #ccc;
+  padding: 6px;
+  min-height: 60px;
+  text-align: center;
+  font-size: 12px;
+  background: #fff;
+}
+
+.header {
+  font-weight: bold;
+  background: #007bff;
+  color: #fff;
+}
+
+.week-odd {
+  background: #d1ecf1;
+}
+
+.week-even {
+  background: #d4edda;
+}
+
+.vacation {
+  background: #f8d7da;
+}
+
+.day-number {
+  font-weight: bold;
+}
+
+.day-week {
+  font-size: 10px;
+  color: #555;
+}
+
+
+.calendar-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.calendar-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.calendar-table th,
+.calendar-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.calendar-table th {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-primary, .btn-success {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #007bff;
+}
+
+.btn-success {
+  background-color: #28a745;
+}
+
+.form-load-calendar {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
