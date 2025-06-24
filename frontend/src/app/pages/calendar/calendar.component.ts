@@ -14,6 +14,7 @@ interface DateInfo {
   dayOfWeek: string;
   isWorkingDay: boolean | null;
   isEven: boolean;
+  oddEven?: string; 
 }
 
 @Component({
@@ -31,6 +32,8 @@ export class CalendarComponent implements OnInit {
   datesList: DateInfo[] = [];
   isLoading: boolean = false;
   user: any = null; 
+  showPdfPreview = false;
+  editablePdfTable: any[] = [];
 
   
   daysOfWeek: string[] = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
@@ -96,14 +99,13 @@ export class CalendarComponent implements OnInit {
       const dateString = this.formatDateForDisplay(currentDate);
       const dayOfWeek = this.daysOfWeek[currentDate.getDay()];
       const dayNumber = currentDate.getDate();
-      
       this.datesList.push({
         date: dateString,
         dayOfWeek: dayOfWeek,
-        isWorkingDay: null, 
-        isEven: dayNumber % 2 === 0
+        isWorkingDay: null,
+        isEven: dayNumber % 2 === 0,
+        oddEven: dayNumber % 2 === 0 ? 'Par' : 'Impar' 
       });
-      
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
@@ -174,10 +176,199 @@ export class CalendarComponent implements OnInit {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
   };
 
-  await html2pdf.default().set(opt).from(element).save();
+  const worker = html2pdf.default().set(opt).from(element);
+  const pdfBlob = await worker.output('blob');
+
+  const pdfBase64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(pdfBlob);
+  });
+
+  const userId = this.user?.id;
+  if (!userId) {
+    alert('Nu există utilizator autentificat. Nu se poate salva declarația.');
+    element.style.display = 'none';
+    return;
+  }
+  const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+  const newDeclaration = {
+    id: Date.now(),
+    userId: userId,
+    perioada: { start: this.startDate, end: this.endDate },
+    activitati: this.datesList,
+    status: 'generata',
+    dataCreare: new Date().toISOString(),
+    pdfBase64: pdfBase64
+  };
+  declarations.push(newDeclaration);
+  localStorage.setItem('declarations', JSON.stringify(declarations));
+
+  await worker.save();
 
   element.style.display = 'none';
 }
 
+openPdfPreview() {
+    this.editablePdfTable = this.datesList.map(date => ({
+      post: '',
+      data: date.date,
+      c: '',
+      s: '',
+      la: '',
+      p: '',
+      tip: '',
+      coef: '',
+      nrOre: '',
+      grupa: ''
+    }));
+    this.showPdfPreview = true;
+  }
 
+  closePdfPreview() {
+    this.showPdfPreview = false;
+  }
+
+  addPdfTableRow() {
+    this.editablePdfTable.push({
+      post: '', data: '', c: '', s: '', la: '', p: '', tip: '', coef: '', nrOre: '', grupa: ''
+    });
+  }
+
+  removePdfTableRow(index: number) {
+    this.editablePdfTable.splice(index, 1);
+  }
+
+
+async downloadPdfFromPreview() {
+  const element = document.getElementById('pdf-content-preview');
+  if (!element) return;
+
+  const removeButtons = element.querySelectorAll('button');
+  const originalDisplay: string[] = [];
+  removeButtons.forEach((btn, idx) => {
+    originalDisplay[idx] = (btn as HTMLElement).style.display;
+    (btn as HTMLElement).style.display = 'none';
+  });
+
+  try {
+    const html2pdf = await import('html2pdf.js');
+    const opt = {
+      margin: 10,
+      filename: 'declaratie-activitati-didactice.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+
+    const worker = html2pdf.default().set(opt).from(element);
+    const pdfBlob = await worker.output('blob');
+
+    const pdfBase64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    const userId = this.user?.id || this.user?._id;
+    if (!userId) {
+      console.error('Nu există utilizator autentificat:', this.user);
+      alert('Nu există utilizator autentificat. Nu se poate salva declarația.');
+      return;
+    }
+
+    const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+    const newDeclaration = {
+      id: Date.now(),
+      userId: userId,
+      perioada: { start: this.startDate, end: this.endDate },
+      activitati: this.editablePdfTable, 
+      status: 'generata' as const,
+      dataCreare: new Date().toISOString(),
+      pdfBase64: pdfBase64
+    };
+
+    declarations.push(newDeclaration);
+    localStorage.setItem('declarations', JSON.stringify(declarations));
+    
+    console.log('Declarație salvată:', newDeclaration);
+    console.log('Total declarații:', declarations.length);
+
+    await worker.save();
+    
+    alert('Declarația a fost salvată în istoric!');
+
+  } catch (error) {
+    console.error('Eroare la generarea PDF:', error);
+    alert('Eroare la generarea PDF-ului.');
+  } finally {
+    
+    removeButtons.forEach((btn, idx) => {
+      (btn as HTMLElement).style.display = originalDisplay[idx] || '';
+    });
+  }
+}
+
+async savePdfToHistory() {
+  const element = document.getElementById('pdf-content-preview');
+  if (!element) return;
+
+  const removeButtons = element.querySelectorAll('button');
+  const originalDisplay: string[] = [];
+  removeButtons.forEach((btn, idx) => {
+    originalDisplay[idx] = (btn as HTMLElement).style.display;
+    (btn as HTMLElement).style.display = 'none';
+  });
+
+  try {
+    const html2pdf = await import('html2pdf.js');
+    const opt = {
+      margin: 10,
+      filename: 'declaratie-activitati-didactice.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+
+    const worker = html2pdf.default().set(opt).from(element);
+    const pdfBlob = await worker.output('blob');
+
+    const pdfBase64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    const userId = this.user?.id || this.user?._id;
+    if (!userId) {
+      throw new Error('Nu există utilizator autentificat');
+    }
+
+    const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+    const newDeclaration = {
+      id: Date.now(),
+      userId: userId,
+      perioada: { start: this.startDate, end: this.endDate },
+      activitati: this.editablePdfTable,
+      status: 'generata' as const,
+      dataCreare: new Date().toISOString(),
+      pdfBase64: pdfBase64
+    };
+
+    declarations.push(newDeclaration);
+    localStorage.setItem('declarations', JSON.stringify(declarations));
+    
+    console.log('Declarație salvată:', newDeclaration);
+    return newDeclaration;
+
+  } finally {
+  
+    removeButtons.forEach((btn, idx) => {
+      (btn as HTMLElement).style.display = originalDisplay[idx] || '';
+    });
+  }
+}
 }

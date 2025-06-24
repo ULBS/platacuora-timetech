@@ -30,6 +30,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
+  closeNav() {
+    const navToggle = document.getElementById('nav-toggle') as HTMLInputElement;
+    if (navToggle && navToggle.checked) {
+      navToggle.checked = false;
+    }
+  }
+
   ngOnDestroy() {
     
     if (this.authSubscription) {

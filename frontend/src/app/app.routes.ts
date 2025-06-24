@@ -7,6 +7,7 @@ import { AuthGuard } from '../core/services/auth.guard';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { AuthCallbackComponent } from './pages/auth-callback/auth-callback.component';
 import { DebugAuthComponent } from './debug-auth.component';
+import { DeclarationsListComponent } from './pages/calendar/declarations-list.component';
 
 
 export const routes: Routes = [
@@ -29,5 +30,11 @@ export const routes: Routes = [
     component: ProfileComponent,
     canActivate: [AuthGuard]
   },
+  {
+    path: 'declarations',
+    component: DeclarationsListComponent,
+    canActivate: [AuthGuard]
+  },
+ 
   { path: '**', redirectTo: '' } 
 ];

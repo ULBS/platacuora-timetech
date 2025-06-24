@@ -1,47 +1,53 @@
 <div class="calendar-container">
   <div class="calendar-header">
     <h1>Calendar - Propunere Date</h1>
+    <img class="calendar-icon-right" src="https://img.icons8.com/glyph-neue/64/calendar.png" alt="calendar"/>
   </div>
   
   <div class="date-selection-form">
-    <div class="form-group">
-      <label for="startDate">Data de început:</label>
-      <input 
-        type="date"
-        id="startDate"
-        name="startDate"
-        [(ngModel)]="startDate"
-        [min]="minDate"
-        [max]="maxDate"
-        class="form-control"
-      />
-      <button 
-        type="button" 
-        (click)="generatePDFDeclaration()" 
-        class="btn-pdf left-under-start" 
-        [disabled]="datesList.length === 0 || isLoading"
-        *ngIf="datesList.length > 0"
-        style="margin-top: 12px;">
-        <i class="pdf-icon">📄</i>
-        Generează Declarație
-      </button>
-    </div>
-    
-    <div class="form-group">
-      <label for="endDate">Data de sfârșit:</label>
-      <input 
-        type="date"
-        id="endDate"
-        name="endDate"
-        [(ngModel)]="endDate"
-        [min]="minDate"
-        [max]="maxDate"
-        class="form-control"
-      />
+    <div class="form-row">
+      <div class="form-group">
+        <label for="startDate">Data de început:</label>
+        <input 
+          type="date"
+          id="startDate"
+          name="startDate"
+          [(ngModel)]="startDate"
+          [min]="minDate"
+          [max]="maxDate"
+          class="form-control"
+        />
+        <button 
+          type="button" 
+          (click)="openPdfPreview()" 
+          class="btn-pdf"
+          [disabled]="datesList.length === 0 || isLoading"
+          *ngIf="datesList.length > 0">
+          <span class="pdf-icon">📄</span>
+          Generează Declarație
+        </button>
+      </div>
+      
+      <div class="form-group">
+        <label for="endDate">Data de sfârșit:</label>
+        <input 
+          type="date"
+          id="endDate"
+          name="endDate"
+          [(ngModel)]="endDate"
+          [min]="minDate"
+          [max]="maxDate"
+          class="form-control"
+        />
+      </div>
     </div>
     
     <div class="button-group">
-      <button type="button" (click)="generateDates()" class="btn-propose" [disabled]="isLoading">
+      <button 
+        type="button" 
+        (click)="generateDates()" 
+        class="btn-propose" 
+        [disabled]="isLoading">
         {{ isLoading ? 'Se procesează...' : 'Propune date' }}
       </button>
     </div>
@@ -55,7 +61,7 @@
   <div class="dates-list" *ngIf="datesList.length > 0">
     <table class="dates-table">
       <thead>
-        <tr>
+        <tr class="calendar-table-header-row">
           <th>Dată</th>
           <th>Zi săptămână</th>
           <th>Zi lucrătoare</th>
@@ -63,20 +69,36 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let dateInfo of datesList">
-          <td>{{ dateInfo.date }}</td>
-          <td>{{ dateInfo.dayOfWeek }}</td>
-          <td>
-            <span *ngIf="dateInfo.isWorkingDay !== null">
-              {{ dateInfo.isWorkingDay ? 'Da' : ' ' }}
-            </span>
-            <span *ngIf="dateInfo.isWorkingDay === null">În curs de verificare...</span>
+        <tr *ngFor="let dateInfo of datesList; let i = index" [style.animation-delay.s]="i * 0.1">
+          <td class="date-cell">
+            <strong>{{ dateInfo.date }}</strong>
           </td>
-          <td>{{ dateInfo.isEven ? 'Par' : 'Impar' }}</td>
+          <td class="day-cell">
+            <span class="day-badge" [class.weekend]="dateInfo.dayOfWeek === 'Sâmbătă' || dateInfo.dayOfWeek === 'Duminică'">
+              {{ dateInfo.dayOfWeek }}
+            </span>
+          </td>
+          <td class="working-day-cell">
+            <div class="custom-select working-day-select">
+              <select [(ngModel)]="dateInfo.isWorkingDay">
+                <option [ngValue]="true">Da</option>
+                <option [ngValue]="false">-</option>
+              </select>
+            </div>
+          </td>
+          <td class="odd-even-cell">
+            <div class="custom-select odd-even-select">
+              <select [(ngModel)]="dateInfo.oddEven">
+                <option value="Par">Par</option>
+                <option value="Impar">Impar</option>
+              </select>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
+    
 
    <div id="pdf-content"[style]="{ display: 'none' }">
     
@@ -431,6 +453,85 @@
 
 </div>
 
+<!-- Modal for PDF Preview -->
+<div class="pdf-modal" *ngIf="showPdfPreview">
+  <div class="pdf-modal-backdrop" (click)="closePdfPreview()"></div>
+  <div class="pdf-modal-content">
+    <button class="pdf-modal-close" (click)="closePdfPreview()">&times;</button>
+    <div id="pdf-content-preview">
+      <div class="container">
+        <div class="clearfix">
+          <div class="header">
+            <div class="university-name">{{user?.universitate}}</div>
+            <div class="university-name">{{user?.facultate}}</div>
+            <div class="university-name">{{user?.departament}}</div>
+          </div>
+          <div class="approval-section">
+            <div><strong>Aprobat,</strong></div>
+            <div><strong>Decan</strong></div>
+            <div style="margin-top: 20px;"><strong>{{user?.decan}}</strong></div>
+          </div>
+        </div>
+        <h3 class="title" style="font-size: 20px;">DECLARAȚIE</h3>
+        <div class="content" style="font-size: 14px;">
+          Subsemnatul(a), <strong id="declarant">{{user.declarant}}</strong>,
+          <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span>
+          în {{user.departament}} activități didactice după cum urmează:
+        </div>
+        <table class="activities-table">
+          <thead>
+            <tr class="header-main">
+              <th rowspan="2">Post din săpt.</th>
+              <th rowspan="2">Data</th>
+              <th colspan="4">Numărul ore fizice</th>
+              <th rowspan="2">Tip</th>
+              <th rowspan="2">Coef.</th>
+              <th rowspan="2">Nr. Ore</th>
+              <th rowspan="2">Anul, grupa, semigrupa</th>
+            </tr>
+            <tr>
+              <th>C</th>
+              <th>S</th>
+              <th>L/A</th>
+              <th>P</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of editablePdfTable; let i = index">
+              <td><input [(ngModel)]="row.post" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.data" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.c" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.s" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.la" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.p" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.tip" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.coef" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.nrOre" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.grupa" class="pdf-table-input" /></td>
+              <td><button (click)="removePdfTableRow(i)">🗑️</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button (click)="addPdfTableRow()">Adaugă rând</button>
+        <!-- ...rest of PDF content, signatures, etc... -->
+        <div class="signatures">
+          <div class="signature-section">
+            <div class="signature-title">DIRECTOR DEPARTAMENT</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">{{user.directorDepartament}}</div>
+          </div>
+          <div class="signature-section">
+            <div class="signature-title">DECLARANT</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">{{user.declarant}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-pdf" (click)="downloadPdfFromPreview()">Descarcă PDF</button>
+  </div>
+</div>
+
 <style>
         body {
             font-family: 'Times New Roman', serif;
@@ -495,4 +596,13 @@
             display: table;
             clear: both;
         }
+
+        .calendar-icon-right {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+
+      
     </style>
