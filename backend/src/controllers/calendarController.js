@@ -365,40 +365,6 @@ function getWeekInfoFromConfig(cfg, date) {
 }
 
 
-function getWeekInfoFromConfig(cfg, date) {
-  for (const week of cfg.weeks) {
-    const wStart = new Date(week.startDate);
-    const wEnd = new Date(week.startDate);
-    wEnd.setDate(wEnd.getDate() + 6);
-    if (date >= wStart && date <= wEnd) {
-      return {
-        weekNumber: week.weekNumber,
-        weekType: week.weekType,
-        isSpecial: false,
-        startDate: wStart,
-        endDate: wEnd
-      };
-    }
-  }
-  if (cfg.isMedicine) {
-    for (const special of cfg.specialWeeks) {
-      const sStart = new Date(special.startDate);
-      const sEnd = new Date(special.startDate);
-      sEnd.setDate(sEnd.getDate() + 6);
-      if (date >= sStart && date <= sEnd) {
-        return {
-          weekNumber: special.weekNumber,
-          weekType: special.weekType,
-          isSpecial: true,
-          startDate: sStart,
-          endDate: sEnd
-        };
-      }
-    }
-  }
-  return null;
-}
-
 
 
 
