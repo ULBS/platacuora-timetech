@@ -1,763 +1,792 @@
- * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-          background: #f5f7fa;
-          min-height: 100vh;
-        }
-
-        .calendar-container {
-          max-width: 900px;
-          margin: 60px auto;
-          background: white;
-          border-radius: 20px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-          animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .calendar-header {
-          background: linear-gradient(135deg, #225091 0%, #431373 100%);
-          color: white;
-          padding: 40px 30px;
-          text-align: center;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .calendar-header h1 {
-          font-size: clamp(24px, 4vw, 32px);
-          font-weight: 700;
-          margin: 0;
-          position: relative;
-          z-index: 1;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .calendar-icon-right {
-          position: absolute;
-          left: 80px;
-          top: 50%;
-          transform: translateY(-50%);
-          z-index: 2;
-          opacity: 0.5;
-        }
-
-        .date-selection-form {
-          padding: 40px 30px;
-          background: #f8f9fa;
-          border-bottom: 1px solid #e9ecef;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          margin-bottom: 30px;
-        }
-
-        .form-group {
-          position: relative;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #495057;
-          font-size: 14px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .form-control {
-          width: 100%;
-          padding: 15px 20px;
-          border: 2px solid #e9ecef;
-          border-radius: 12px;
-          font-size: 16px;
-          transition: all 0.3s ease;
-          background: white;
-          color: #495057;
-        }
-
-        .form-control[type="date"] {
-          position: relative;
-          padding-right: 50px;
-          cursor: pointer;
-        }
-
-        .form-control[type="date"]::-webkit-calendar-picker-indicator {
-          position: absolute;
-          right: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          opacity: 0.7;
-          transition: opacity 0.3s ease;
-        }
-
-        .form-control[type="date"]::-webkit-calendar-picker-indicator:hover {
-          opacity: 1;
-        }
-
-        .form-control:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-          transform: translateY(-2px);
-        }
-
-        .button-group {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          flex-wrap: wrap;
-        }
-
-        .btn-propose, .btn-pdf {
-          padding: 15px 30px;
-          border: none;
-          border-radius: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          position: relative;
-          overflow: hidden;
-          min-width: 160px;
-          text-align: center;
-        }
-
-        .btn-propose {
-          background: linear-gradient(135deg, #225091 0%, #431373 100%);
-          color: white;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-propose:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
-        .btn-pdf {
-          background: #ffffff;
-          color: #0065F8;
-          border: 1px solid #0065F8;
-          margin-top: 15px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .btn-pdf:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(191, 198, 197, 0.6);
-        }
-
-        .btn-propose:disabled, .btn-pdf:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .loading-indicator {
-          text-align: center;
-          padding: 40px;
-          background: white;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          margin: 0 auto 20px;
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #667eea;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .dates-list {
-          padding: 30px;
-          background: white;
-          overflow-x: auto;
-        }
-
-        .dates-table {
-          width: 100%;
-          max-width: 100%;
-          border-collapse: collapse;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-          background: white;
-          table-layout: fixed;
-        }
-
-        .dates-table th {
-          background: #ffffff;
-          color: #0065F8;
-          border-bottom: 2px solid #0065F8;
-          padding: 15px 8px;
-          text-align: left;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 12px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .dates-table td {
-          padding: 12px 8px;
-          border-bottom: 1px solid #f1f3f4;
-          vertical-align: middle;
-          transition: background-color 0.2s ease;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .dates-table th:nth-child(1), .dates-table td:nth-child(1) { width: 20%; } /* Dată */
-        .dates-table th:nth-child(2), .dates-table td:nth-child(2) { width: 18%; } /* Zi săptămână */
-        .dates-table th:nth-child(3), .dates-table td:nth-child(3) { width: 20%; } /* Zi lucrătoare */
-        .dates-table th:nth-child(4), .dates-table td:nth-child(4) { width: 18%; } /* Par/Impar */
-
-        .dates-table tr:hover {
-          background-color: #f8f9ff;
-        }
-
-        .dates-table tr:last-child td {
-          border-bottom: none;
-        }
-
-        .date-cell strong {
-          color: #495057;
-          font-size: 14px;
-          display: block;
-          margin-bottom: 2px;
-        }
-
-        .day-badge {
-          display: inline-block;
-          padding: 3px 8px;
-          border-radius: 15px;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-          background: #e3f2fd;
-          color: #0065F8;
-          white-space: nowrap;
-          max-width: 100%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .day-badge.weekend {
-          background: #ffebee;
-          color: #d32f2f;
-        }
-
-        .custom-select {
-          position: relative;
-          display: inline-block;
-          width: 100%;
-        }
-
-        .custom-select select {
-          width: 100%;
-          padding: 8px 25px 8px 8px;
-          border: 2px solid #e9ecef;
-          border-radius: 6px;
-          background: white;
-          font-size: 12px;
-          color: #495057;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          appearance: none;
-          -webkit-appearance: none;
-          -moz-appearance: none;
-        }
-
-        .custom-select select:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .custom-select::after {
-          content: '▼';
-          position: absolute;
-          top: 50%;
-          right: 8px;
-          transform: translateY(-50%);
-          pointer-events: none;
-          color: #667eea;
-          font-size: 10px;
-          transition: transform 0.3s ease;
-        }
-
-        .custom-select:hover::after {
-          transform: translateY(-50%) rotate(180deg);
-        }
-
-        .dates-table tbody tr {
-          animation: slideIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .pdf-modal {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-
-        .pdf-modal-backdrop {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.5);
-        }
-
-        .pdf-modal-content {
-          position: relative;
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-          padding: 32px 24px 24px 24px;
-          max-width: 900px;
-          width: 100%;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-
-        .pdf-modal-close {
-          position: absolute;
-          top: 12px;
-          right: 16px;
-          background: none;
-          border: none;
-          font-size: 2rem;
-          color: #888;
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-        }
-
-        .pdf-modal-close:hover {
-          background-color: #f0f0f0;
-        }
-
-        #pdf-content {
-          display: none;
-        }
-
-        .container {
-          max-width: 800px;
-          margin: 0 auto;
-          background: white;
-          padding: 30px;
-          font-family: 'Times New Roman', serif;
-          line-height: 1.4;
-        }
-
-        .header {
-          text-align: left;
-          margin-bottom: 30px;
-          font-size: 12px;
-          line-height: 1.3;
-        }
-
-        .university-name {
-          font-weight: bold;
-          text-transform: uppercase;
-        }
-
-        .approval-section {
-          float: right;
-          text-align: center;
-          margin-left: 20px;
-          margin-bottom: 20px;
-          font-size: 12px;
-        }
-
-        .title {
-          text-align: center;
-          font-size: 16px;
-          font-weight: bold;
-          margin: 40px 0 30px 0;
-          clear: both;
-        }
-
-        .content {
-          font-size: 12px;
-          text-align: justify;
-          clear: both;
-        }
-
-        .highlight {
-          color: #0066cc;
-          font-weight: bold;
-        }
-
-        .clearfix::after {
-          content: "";
-          display: table;
-          clear: both;
-        }
-
-        .signatures {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 40px;
-          flex-wrap: wrap;
-          gap: 20px;
-        }
-
-        .signature-section {
-          text-align: center;
-          width: 45%;
-          min-width: 200px;
-        }
-
-        .signature-title {
-          font-weight: bold;
-          margin-bottom: 10px;
-        }
-
-        .signature-name {
-          font-weight: bold;
-          margin-top: 20px;
-        }
-
-        .signature-line {
-          border-bottom: 1px solid #000;
-          width: 200px;
-          height: 40px;
-          margin: 0 auto;
-        }
-
-        @media (max-width: 1024px) {
-          .calendar-container {
-            margin: 40px 20px;
-            max-width: none;
-          }
-          
-          .date-selection-form {
-            padding: 30px 25px;
-          }
-          
-          .dates-list {
-            padding: 25px;
-          }
-          
-          .form-row {
-            gap: 25px;
-          }
-
-          .dates-table th, .dates-table td {
-            padding: 10px 6px;
-          }
-
-          .dates-table th {
-            font-size: 11px;
-          }
-
-          .day-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-          }
-
-          .custom-select select {
-            font-size: 11px;
-            padding: 6px 20px 6px 6px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .calendar-container {
-            margin: 20px 15px;
-            border-radius: 15px;
-          }
-
-          .calendar-header {
-            padding: 30px 20px;
-          }
-
-          .calendar-header h1 {
-            font-size: clamp(20px, 5vw, 28px);
-          }
-
-          .calendar-icon-right {
-            left: 20px;
-            font-size: 30px;
-          }
-
-          .form-row {
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-          }
-
-          .date-selection-form {
-            padding: 25px 20px;
-          }
-
-          .form-control {
-            padding: 12px 16px;
-            font-size: 16px;
-          }
-
-          .form-control[type="date"] {
-            font-size: 16px;
-            padding: 14px 50px 14px 16px;
-            min-height: 50px;
-          }
-
-          .button-group {
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-          }
-
-          .btn-propose, .btn-pdf {
-            width: 100%;
-            max-width: 300px;
-            padding: 14px 24px;
-            font-size: 15px;
-            margin-top: 0;
-          }
-
-          .dates-list {
-            padding: 20px 15px;
-          }
-
-          .dates-table {
-            font-size: 11px;
-          }
-
-          .dates-table th, .dates-table td {
-            padding: 8px 4px;
-          }
-
-          .dates-table th {
-            font-size: 10px;
-          }
-
-          .date-cell strong {
-            font-size: 12px;
-          }
-
-          .day-badge {
-            font-size: 9px;
-            padding: 2px 4px;
-          }
-
-          .custom-select select {
-            font-size: 10px;
-            padding: 5px 18px 5px 4px;
-          }
-
-          .custom-select::after {
-            right: 4px;
-            font-size: 8px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .calendar-container {
-            margin: 15px 10px;
-            border-radius: 12px;
-          }
-
-          .calendar-header {
-            padding: 25px 15px;
-          }
-
-          .calendar-header h1 {
-            font-size: clamp(18px, 6vw, 24px);
-          }
-
-          .calendar-icon-right {
-            left: 15px;
-            font-size: 24px;
-          }
-
-          .date-selection-form {
-            padding: 20px 15px;
-          }
-
-          .form-group label {
-            font-size: 13px;
-            margin-bottom: 6px;
-          }
-
-          .form-control {
-            padding: 10px 14px;
-            font-size: 16px;
-            border-radius: 8px;
-          }
-
-          .form-control[type="date"] {
-            padding: 12px 45px 12px 14px;
-            min-height: 48px;
-          }
-
-          .btn-propose, .btn-pdf {
-            padding: 12px 20px;
-            font-size: 14px;
-            letter-spacing: 0.3px;
-          }
-
-          .dates-list {
-            padding: 15px 10px;
-          }
-
-          .dates-table {
-            font-size: 10px;
-          }
-
-          .dates-table th, .dates-table td {
-            padding: 6px 3px;
-          }
-
-          .dates-table th {
-            font-size: 9px;
-          }
-
-          .date-cell strong {
-            font-size: 11px;
-            margin-bottom: 1px;
-          }
-
-          .day-badge {
-            font-size: 8px;
-            padding: 1px 3px;
-            letter-spacing: 0.2px;
-          }
-
-          .custom-select select {
-            font-size: 9px;
-            padding: 4px 15px 4px 3px;
-          }
-
-          .custom-select::after {
-            right: 3px;
-            font-size: 7px;
-          }
-        }
-
-        @media (max-width: 320px) {
-          .calendar-container {
-            margin: 10px 5px;
-          }
-
-          .calendar-header {
-            padding: 20px 10px;
-          }
-
-          .date-selection-form,
-          .dates-list {
-            padding: 15px 10px;
-          }
-
-          .btn-propose, .btn-pdf {
-            font-size: 13px;
-            padding: 10px 16px;
-          }
-
-          .dates-table th, .dates-table td {
-            padding: 5px 2px;
-          }
-
-          .day-badge {
-            font-size: 7px;
-            padding: 1px 2px;
-          }
-
-          .custom-select select {
-            font-size: 8px;
-            padding: 3px 12px 3px 2px;
-          }
-        }
-
-        @media (max-width: 768px) and (orientation: landscape) {
-          .calendar-header {
-            padding: 20px;
-          }
-          
-          .calendar-header h1 {
-            font-size: clamp(16px, 4vw, 22px);
-          }
-          
-          .date-selection-form {
-            padding: 20px;
-          }
-          
-          .form-row {
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-          }
-        }
-
-        @media print {
-          .calendar-container {
-            box-shadow: none;
-            margin: 0;
-          }
-          
-          .calendar-header {
-            background: #225091 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .btn-propose, .btn-pdf {
-            display: none;
-          }
-          
-          .dates-table {
-            break-inside: avoid;
-          }
-        }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.calendar-container {
+  max-width: 900px;
+  margin: 60px auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, #225091 0%, #431373 100%);
+  color: white;
+  padding: 40px 30px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-header h1 {
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 700;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.calendar-icon-right {
+  position: absolute;
+  left: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  opacity: 0.5;
+}
+
+.date-selection-form {
+  padding: 40px 30px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 15px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+  color: #495057;
+}
+
+.form-control[type="date"] {
+  position: relative;
+  padding-right: 50px;
+  cursor: pointer;
+}
+
+.form-control[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.form-control[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn-propose,
+.btn-pdf {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  min-width: 160px;
+  text-align: center;
+}
+
+.btn-propose {
+  background: linear-gradient(135deg, #225091 0%, #431373 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-propose:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.btn-pdf {
+  background: #ffffff;
+  color: #0065F8;
+  border: 1px solid #0065F8;
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-pdf:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(191, 198, 197, 0.6);
+}
+
+.btn-propose:disabled,
+.btn-pdf:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 40px;
+  background: white;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dates-list {
+  padding: 30px;
+  background: white;
+  overflow-x: auto;
+}
+
+.dates-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: white;
+  table-layout: fixed;
+}
+
+.dates-table th {
+  background: #ffffff;
+  color: #0065F8;
+  border-bottom: 2px solid #0065F8;
+  padding: 15px 8px;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dates-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: middle;
+  transition: background-color 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dates-table th:nth-child(1),
+.dates-table td:nth-child(1) {
+  width: 20%;
+}
+
+.dates-table th:nth-child(2),
+.dates-table td:nth-child(2) {
+  width: 18%;
+}
+
+.dates-table th:nth-child(3),
+.dates-table td:nth-child(3) {
+  width: 20%;
+}
+
+.dates-table th:nth-child(4),
+.dates-table td:nth-child(4) {
+  width: 18%;
+}
+
+.dates-table tr:hover {
+  background-color: #f8f9ff;
+}
+
+.dates-table tr:last-child td {
+  border-bottom: none;
+}
+
+.date-cell strong {
+  color: #495057;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.day-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #e3f2fd;
+  color: #0065F8;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-badge.weekend {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.custom-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.custom-select select {
+  width: 100%;
+  padding: 8px 25px 8px 8px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.custom-select select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-select::after {
+  content: '▼';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #667eea;
+  font-size: 10px;
+  transition: transform 0.3s ease;
+}
+
+.custom-select:hover::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.dates-table tbody tr {
+  animation: slideIn 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.pdf-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pdf-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.pdf-modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  padding: 32px 24px 24px 24px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pdf-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.pdf-modal-close:hover {
+  background-color: #f0f0f0;
+}
+
+#pdf-content {
+  display: none;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  font-family: 'Times New Roman', serif;
+  line-height: 1.4;
+}
+
+.header {
+  text-align: left;
+  margin-bottom: 30px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.university-name {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.approval-section {
+  float: right;
+  text-align: center;
+  margin-left: 20px;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 40px 0 30px 0;
+  clear: both;
+}
+
+.content {
+  font-size: 12px;
+  text-align: justify;
+  clear: both;
+}
+
+.highlight {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.signature-section {
+  text-align: center;
+  width: 45%;
+  min-width: 200px;
+}
+
+.signature-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.signature-name {
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.signature-line {
+  border-bottom: 1px solid #000;
+  width: 200px;
+  height: 40px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .calendar-container {
+    margin: 40px 20px;
+    max-width: none;
+  }
+
+  .date-selection-form {
+    padding: 30px 25px;
+  }
+
+  .dates-list {
+    padding: 25px;
+  }
+
+  .form-row {
+    gap: 25px;
+  }
+
+  .dates-table th,
+  .dates-table td {
+    padding: 10px 6px;
+  }
+
+  .dates-table th {
+    font-size: 11px;
+  }
+
+  .day-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .custom-select select {
+    font-size: 11px;
+    padding: 6px 20px 6px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-container {
+    margin: 20px 15px;
+    border-radius: 15px;
+  }
+
+  .calendar-header {
+    padding: 30px 20px;
+  }
+
+  .calendar-header h1 {
+    font-size: clamp(20px, 5vw, 28px);
+  }
+
+  .calendar-icon-right {
+    left: 20px;
+    font-size: 30px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .date-selection-form {
+    padding: 25px 20px;
+  }
+
+  .form-control {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+
+  .form-control[type="date"] {
+    font-size: 16px;
+    padding: 14px 50px 14px 16px;
+    min-height: 50px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-propose,
+  .btn-pdf {
+    width: 100%;
+    max-width: 300px;
+    padding: 14px 24px;
+    font-size: 15px;
+    margin-top: 0;
+  }
+
+  .dates-list {
+    padding: 20px 15px;
+  }
+
+  .dates-table {
+    font-size: 11px;
+  }
+
+  .dates-table th,
+  .dates-table td {
+    padding: 8px 4px;
+  }
+
+  .dates-table th {
+    font-size: 10px;
+  }
+
+  .date-cell strong {
+    font-size: 12px;
+  }
+
+  .day-badge {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .custom-select select {
+    font-size: 10px;
+    padding: 5px 18px 5px 4px;
+  }
+
+  .custom-select::after {
+    right: 4px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-container {
+    margin: 15px 10px;
+    border-radius: 12px;
+  }
+
+  .calendar-header {
+    padding: 25px 15px;
+  }
+
+  .calendar-header h1 {
+    font-size: clamp(18px, 6vw, 24px);
+  }
+
+  .calendar-icon-right {
+    left: 15px;
+    font-size: 24px;
+  }
+
+  .date-selection-form {
+    padding: 20px 15px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .form-control {
+    padding: 10px 14px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+
+  .form-control[type="date"] {
+    padding: 12px 45px 12px 14px;
+    min-height: 48px;
+  }
+
+  .btn-propose,
+  .btn-pdf {
+    padding: 12px 20px;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+  }
+
+  .dates-list {
+    padding: 15px 10px;
+  }
+
+  .dates-table {
+    font-size: 10px;
+  }
+
+  .dates-table th,
+  .dates-table td {
+    padding: 6px 3px;
+  }
+
+  .dates-table th {
+    font-size: 9px;
+  }
+
+  .date-cell strong {
+    font-size: 11px;
+    margin-bottom: 1px;
+  }
+
+  .day-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    letter-spacing: 0.2px;
+  }
+
+  .custom-select select {
+    font-size: 9px;
+    padding: 4px 15px 4px 3px;
+  }
+
+  .custom-select::after {
+    right: 3px;
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 320px) {
+  .calendar-container {
+    margin: 10px 5px;
+  }
+
+  .calendar-header {
+    padding: 20px 10px;
+  }
+
+  .date-selection-form,
+  .dates-list {
+    padding: 15px 10px;
+  }
+
+  .btn-propose,
+  .btn-pdf {
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+
+  .dates-table th,
+  .dates-table td {
+    padding: 5px 2px;
+  }
+
+  .day-badge {
+    font-size: 7px;
+    padding: 1px 2px;
+  }
+
+  .custom-select select {
+    font-size: 8px;
+    padding: 3px 12px 3px 2px;
+  }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .calendar-header {
+    padding: 20px;
+  }
+
+  .calendar-header h1 {
+    font-size: clamp(16px, 4vw, 22px);
+  }
+
+  .date-selection-form {
+    padding: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+}
+
+@media print {
+  .calendar-container {
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .calendar-header {
+    background: #225091 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .btn-propose,
+  .btn-pdf {
+    display: none;
+  }
+
+  .dates-table {
+    break-inside: avoid;
+  }
+}
