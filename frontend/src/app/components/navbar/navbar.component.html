@@ -2,18 +2,25 @@
   <div class="logo">
     <a routerLink="/"><img src="/assets/images/LOGO-ULBS_orizontal_negativ.png" alt="Logo"></a>
   </div>
+  <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+  <label for="nav-toggle" class="nav-toggle-label">
+    <span></span>
+    <span></span>
+    <span></span>
+  </label>
   <div class="nav-links">
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeNav()">Home</a>
     <ng-container *ngIf="isAuthenticated">
-      <a routerLink="/hours-list" routerLinkActive="active">Lista ore</a>
-      <a routerLink="/calendar" routerLinkActive="active">Calendar</a>
-      <a routerLink="/profile" routerLinkActive="active">Profile</a>
+      <a routerLink="/hours-list" routerLinkActive="active" (click)="closeNav()">Lista ore</a>
+      <a routerLink="/calendar" routerLinkActive="active" (click)="closeNav()">Calendar</a>
+      <a routerLink="/declarations" routerLinkActive="active" (click)="closeNav()">Istoric Declarații</a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeNav()">Profile</a>
     </ng-container>
     <ng-container *ngIf="!isAuthenticated">
-      <a routerLink="/login" routerLinkActive="active">Login</a>
+      <a routerLink="/login" routerLinkActive="active" (click)="closeNav()">Login</a>
     </ng-container>
     <ng-container *ngIf="isAuthenticated">
-      <a href="#" (click)="logout($event)" class="logout-link">Logout</a>
+      <a href="#" (click)="logout($event); closeNav()" class="logout-link">Logout</a>
     </ng-container>
   </div>
 </nav>
