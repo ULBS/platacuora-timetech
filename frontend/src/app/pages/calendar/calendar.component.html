@@ -1,61 +1,66 @@
 <div class="calendar-container">
   <div class="calendar-header">
     <h1>Calendar - Propunere Date</h1>
+    <img class="calendar-icon-right" src="https://img.icons8.com/glyph-neue/64/calendar.png " alt="calendar"/>
   </div>
-  
+
+  <!-- Date Selection Form -->
   <div class="date-selection-form">
-    <div class="form-group">
-      <label for="startDate">Data de început:</label>
-      <input 
-        type="date"
-        id="startDate"
-        name="startDate"
-        [(ngModel)]="startDate"
-        [min]="minDate"
-        [max]="maxDate"
-        class="form-control"
-      />
+    <div class="form-row">
+      <div class="form-group">
+        <label for="startDate">Data de început:</label>
+        <input 
+          type="date"
+          id="startDate"
+          name="startDate"
+          [(ngModel)]="startDate"
+          [min]="minDate"
+          [max]="maxDate"
+          class="form-control"
+        />
+        <button 
+          type="button" 
+          (click)="openPdfPreview()" 
+          class="btn-pdf"
+          [disabled]="datesList.length === 0 || isLoading"
+          *ngIf="datesList.length > 0">
+          <span class="pdf-icon">📄</span>
+          Generează Declarație
+        </button>
+      </div>
+      <div class="form-group">
+        <label for="endDate">Data de sfârșit:</label>
+        <input 
+          type="date"
+          id="endDate"
+          name="endDate"
+          [(ngModel)]="endDate"
+          [min]="minDate"
+          [max]="maxDate"
+          class="form-control"
+        />
+      </div>
+    </div>
+    <div class="button-group">
       <button 
         type="button" 
-        (click)="generatePDFDeclaration()" 
-        class="btn-pdf left-under-start" 
-        [disabled]="datesList.length === 0 || isLoading"
-        *ngIf="datesList.length > 0"
-        style="margin-top: 12px;">
-        <i class="pdf-icon">📄</i>
-        Generează Declarație
-      </button>
-    </div>
-    
-    <div class="form-group">
-      <label for="endDate">Data de sfârșit:</label>
-      <input 
-        type="date"
-        id="endDate"
-        name="endDate"
-        [(ngModel)]="endDate"
-        [min]="minDate"
-        [max]="maxDate"
-        class="form-control"
-      />
-    </div>
-    
-    <div class="button-group">
-      <button type="button" (click)="generateDates()" class="btn-propose" [disabled]="isLoading">
+        (click)="generateDates()" 
+        class="btn-propose" 
+        [disabled]="isLoading">
         {{ isLoading ? 'Se procesează...' : 'Propune date' }}
       </button>
     </div>
   </div>
-  
+
   <div class="loading-indicator" *ngIf="isLoading">
     <div class="spinner"></div>
     <p>Se verifică zilele lucrătoare...</p>
   </div>
-  
+
   <div class="dates-list" *ngIf="datesList.length > 0">
     <table class="dates-table">
       <thead>
-        <tr>
+        <tr class="calendar-table-header-row">
           <th>Dată</th>
           <th>Zi săptămână</th>
           <th>Zi lucrătoare</th>
@@ -63,436 +68,510 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let dateInfo of datesList">
-          <td>{{ dateInfo.date }}</td>
-          <td>{{ dateInfo.dayOfWeek }}</td>
-          <td>
-            <span *ngIf="dateInfo.isWorkingDay !== null">
-              {{ dateInfo.isWorkingDay ? 'Da' : ' ' }}
-            </span>
-            <span *ngIf="dateInfo.isWorkingDay === null">În curs de verificare...</span>
+        <tr *ngFor="let dateInfo of datesList; let i = index" [style.animation-delay.s]="i * 0.1">
+          <td class="date-cell">
+            <strong>{{ dateInfo.date }}</strong>
           </td>
-          <td>{{ dateInfo.isEven ? 'Par' : 'Impar' }}</td>
+          <td class="day-cell">
+            <span class="day-badge" [class.weekend]="dateInfo.dayOfWeek === 'Sâmbătă' || dateInfo.dayOfWeek === 'Duminică'">
+              {{ dateInfo.dayOfWeek }}
+            </span>
+          </td>
+          <td class="working-day-cell">
+            <div class="custom-select working-day-select">
+              <select [(ngModel)]="dateInfo.isWorkingDay">
+                <option [ngValue]="true">Da</option>
+                <option [ngValue]="false">-</option>
+              </select>
+            </div>
+          </td>
+          <td class="odd-even-cell">
+            <div class="custom-select odd-even-select">
+              <select [(ngModel)]="dateInfo.oddEven">
+                <option value="Par">Par</option>
+                <option value="Impar">Impar</option>
+              </select>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
+</div>
 
-   <div id="pdf-content"[style]="{ display: 'none' }">
-    
-    <body>
+<!-- Semester Calendar Section -->
+<div class="calendar-container">
+  <div class="calendar-header">
+    <h1>📅 Calendar - Structură Semestru Editabilă</h1>
+  </div>
+
+  <!-- Load Semester Form -->
+  <form (ngSubmit)="loadSemesterCalendar()" #calendarForm="ngForm" class="form-load-calendar">
+    <div class="form-group">
+      <label for="academicYear">An academic:</label>
+      <input type="text" id="academicYear" name="academicYear"
+             [(ngModel)]="selectedAcademicYear"
+             placeholder="Ex: 2024/2025"
+             pattern="\d{4}/\d{4}" required />
+    </div>
+    <div class="form-group">
+      <label for="semesterNumber">Număr semestru:</label>
+      <input type="number" id="semesterNumber" name="semesterNumber"
+             [(ngModel)]="selectedSemesterNumber"
+             min="1" max="2" required />
+    </div>
+    <button type="submit" class="btn-primary">Încarcă Calendar</button>
+  </form>
+
+  <!-- Editable Calendar View -->
+  <div *ngIf="loadedSemester" class="calendar-editable">
+    <h3>Structură pentru {{ loadedSemester.academicYear }} - Semestru {{ loadedSemester.semester }}</h3>
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Săptămână</th>
+          <th>Dată început</th>
+          <th>Tip săptămână</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let week of loadedSemester.weeks">
+          <td><input type="text" [(ngModel)]="week.weekNumber" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="week.startDate" class="form-control" /></td>
+          <td>
+            <select [(ngModel)]="week.weekType" class="form-control">
+              <option value="Par">Par</option>
+              <option value="Impar">Impar</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Vacanțe / Perioade speciale</h4>
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Nume</th>
+          <th>Început</th>
+          <th>Sfârșit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vac of loadedSemester.specialWeeks">
+          <td><input type="text" [(ngModel)]="vac.name" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="vac.startDate" class="form-control" /></td>
+          <td><input type="date" [(ngModel)]="vac.endDate" class="form-control" /></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button (click)="saveEditedSemester()" class="btn-success">💾 Salvează Modificările</button>
+  </div>
+</div>
+
+<!-- Semester Structure Configuration -->
+<div class="semester-structure-section">
+  <h2>🗓️ Configurare Structură Semestru</h2>
+  <form (ngSubmit)="saveSemesterStructure()" #semesterForm="ngForm">
+    <div class="form-group">
+      <label for="semesterStart">Data de început semestru:</label>
+      <input
+        type="date"
+        id="semesterStart"
+        name="semesterStart"
+        [(ngModel)]="semesterStart"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="semesterEnd">Data de sfârșit semestru:</label>
+      <input
+        type="date"
+        id="semesterEnd"
+        name="semesterEnd"
+        [(ngModel)]="semesterEnd"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="semesterNumber">Număr semestru:</label>
+      <input
+        type="number"
+        id="semesterNumber"
+        name="semesterNumber"
+        [(ngModel)]="semesterNumber"
+        min="1"
+        max="2"
+        required
+      />
+    </div>
+    <div class="form-group checkbox">
+      <label>
+        <input
+          type="checkbox"
+          name="isMedicine"
+          [(ngModel)]="isMedicine"
+        />
+        Este pentru Facultatea de Medicină
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-success">
+        Salvează Configurația și Generează Săptămâni
+      </button>
+    </div>
+  </form>
+
+  <hr />
+  <h3>🎯 Adăugare Vacanță / Perioadă Specială</h3>
+  <form (ngSubmit)="addVacation()" #vacationForm="ngForm">
+    <div class="form-group">
+      <label for="vacationName">Nume vacanță:</label>
+      <input
+        type="text"
+        id="vacationName"
+        name="vacationName"
+        [(ngModel)]="vacation.name"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="vacationStart">Început:</label>
+      <input
+        type="date"
+        id="vacationStart"
+        name="vacationStart"
+        [(ngModel)]="vacation.startDate"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="vacationEnd">Sfârșit:</label>
+      <input
+        type="date"
+        id="vacationEnd"
+        name="vacationEnd"
+        [(ngModel)]="vacation.endDate"
+        required
+      />
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-add">Adaugă Vacanță</button>
+    </div>
+  </form>
+</div>
+
+<!-- Hidden PDF Content -->
+<div id="pdf-content" [style]="{ display: 'none' }">
+  <body>
     <div class="container">
-        <div class="clearfix">
-            <div class="header">
-                <div class="university-name">{{user?.universitate}}</div>
-                <div class="university-name">{{user?.facultate}}</div>
-                <div class="university-name">{{user?.departament}}</div>
-            </div>
-            
-            <div class="approval-section">
-                <div><strong>Aprobat,</strong></div>
-                <div><strong>Decan</strong></div>
-                <div style="margin-top: 20px;">
-                    <strong>{{user?.decan}}</strong>
-                </div>
-            </div>
+      <div class="clearfix">
+        <div class="header">
+          <div class="university-name">{{user?.universitate}}</div>
+          <div class="university-name">{{user?.facultate}}</div>
+          <div class="university-name">{{user?.departament}}</div>
         </div>
-        
-        <h3 class="title" style="font-size: 20px;">DECLARAȚIE</h3>
-        
-        <div class="content" style="font-size: 14px;">
-            Subsemnatul(a), <strong id="declarant">{{user.declarant}}</strong>, 
-            <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span> 
-            în {{user.departament}} activități didactice după cum urmează:
+        <div class="approval-section">
+          <div><strong>Aprobat,</strong></div>
+          <div><strong>Decan</strong></div>
+          <div style="margin-top: 20px;"><strong>{{user?.decan}}</strong></div>
         </div>
-
-           
-        <table class="activities-table">
-            <thead>
-                <tr class="header-main">
-                    <th rowspan="2" class="post-column">Post din săpt.</th>
-                    <th rowspan="2" class="data-column">Data</th>
-                    <th colspan="4">Numărul ore fizice</th>
-                    <th rowspan="2" class="tip-column">Tip</th>
-                    <th rowspan="2" class="coef-column">Coef.</th>
-                    <th rowspan="2" class="total-column">Nr. Ore</th>
-                    <th rowspan="2" class="grupa-column">Anul, grupa, semigrupa</th>
-                </tr>
-                <tr>
-                    <th class="ore-column">C</th>
-                    <th class="ore-column">S</th>
-                    <th class="ore-column">L/A</th>
-                    <th class="ore-column">P</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>19</td>
-                    <td>02.04.2025</td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>C_I/1</td>
-                </tr>
-                <tr>
-                    <td>19</td>
-                    <td>07.04.2025</td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_I_C</td>
-                </tr>
-                <tr>
-                    <td>19</td>
-                    <td>09.04.2025</td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>C_11/1</td>
-                </tr>
-                <tr>
-                    <td>19</td>
-                    <td>14.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>1</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>1</td>
-                    <td>C_11/2</td>
-                </tr>
-           
-                <tr>
-                    <td>21</td>
-                    <td>03.04.2025</td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td>MR</td>
-                    <td>2.5</td>
-                    <td>5</td>
-                    <td>An_II_mICAI</td>
-                </tr>
-                <tr>
-                    <td>21</td>
-                    <td>10.04.2025</td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td>MR</td>
-                    <td>2.5</td>
-                    <td>5</td>
-                    <td>mICAI_II_sgr1</td>
-                </tr>
-                <tr>
-                    <td>22</td>
-                    <td>11.04.2025</td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td>ME</td>
-                    <td>3.125</td>
-                    <td>6.25</td>
-                    <td>An_II_mtES</td>
-                </tr>
-          
-                <tr>
-                    <td>41</td>
-                    <td>01.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_IV_C</td>
-                </tr>
-                <tr>
-                    <td>41</td>
-                    <td>08.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>C_41/1</td>
-                </tr>
-                <tr>
-                    <td>42</td>
-                    <td>12.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_I_MI</td>
-                </tr>
-                <tr>
-                    <td>42</td>
-                    <td>17.04.2025</td>
-                    <td></td>
-                    <td>4</td>
-                    <td></td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>4</td>
-                    <td>An_III_MI</td>
-                </tr>
-                <tr>
-                    <td>42</td>
-                    <td>22.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>MI_31/1</td>
-                </tr>
-                <tr>
-                    <td>21</td>
-                    <td>16.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LE</td>
-                    <td>1.25</td>
-                    <td>2.5</td>
-                    <td>An_II_MEC_EN</td>
-                </tr>
-                <tr>
-                    <td>22</td>
-                    <td>18.04.2025</td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td></td>
-                    <td>LE</td>
-                    <td>1.25</td>
-                    <td>2.5</td>
-                    <td>MECEn_21_1</td>
-                </tr>
-                <tr>
-                    <td>40</td>
-                    <td>23.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_IV_C</td>
-                </tr>
-                <tr>
-                    <td>40</td>
-                    <td>25.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_IV_C</td>
-                </tr>
-                <tr>
-                    <td>40</td>
-                    <td>28.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_IV_C</td>
-                </tr>
-                <tr>
-                    <td>40</td>
-                    <td>30.04.2025</td>
-                    <td></td>
-                    <td></td>
-                    <td>2</td>
-                    <td></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>An_IV_C</td>
-                </tr>
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="2"><strong>TOTAL</strong></td>
-                    <td><strong>6</strong></td>
-                    <td><strong>14</strong></td>
-                    <td><strong>17</strong></td>
-                    <td><strong>2</strong></td>
-                    <td>LR</td>
-                    <td>1</td>
-                    <td><strong>51.75</strong></td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-        
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <p><strong>Total ore față:</strong> 39</p>
-                <p><strong>Total ore calculate:</strong> 51.75</p>
-            </div>
+      </div>
+      <h3 class="title" style="font-size: 20px;">DECLARAȚIE</h3>
+      <div class="content" style="font-size: 14px;">
+        Subsemnatul(a), <strong id="declarant">{{user.declarant}}</strong>,
+        <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span>
+        în {{user.departament}} activități didactice după cum urmează:
+      </div>
+      <table class="activities-table">
+        <thead>
+          <tr class="header-main">
+            <th rowspan="2">Post din săpt.</th>
+            <th rowspan="2">Data</th>
+            <th colspan="4">Numărul ore fizice</th>
+            <th rowspan="2">Tip</th>
+            <th rowspan="2">Coef.</th>
+            <th rowspan="2">Nr. Ore</th>
+            <th rowspan="2">Anul, grupa, semigrupa</th>
+          </tr>
+          <tr>
+            <th>C</th>
+            <th>S</th>
+            <th>L/A</th>
+            <th>P</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>19</td>
+            <td>02.04.2025</td>
+            <td>2</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>LR</td>
+            <td>1</td>
+            <td>2</td>
+            <td>C_I/1</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="2"><strong>TOTAL</strong></td>
+            <td><strong>6</strong></td>
+            <td><strong>14</strong></td>
+            <td><strong>17</strong></td>
+            <td><strong>2</strong></td>
+            <td>LR</td>
+            <td>1</td>
+            <td><strong>51.75</strong></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <p><strong>Total ore față:</strong> 39</p>
+          <p><strong>Total ore calculate:</strong> 51.75</p>
         </div>
-        
-        <div style="margin-top: 20px;">
-            <strong>**Coeficienții sunt conform tabelului:</strong>
+      </div>
+      <div style="margin-top: 20px;">
+        <strong>**Coeficienții sunt conform tabelului:</strong>
+      </div>
+      <table class="coefficients-table">
+        <thead>
+          <tr>
+            <th>Coeficienți</th>
+            <th>Curs</th>
+            <th>S/L/P/A</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>LR - Licența română</td>
+            <td>2</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="explanation-text">
+        Subsemnatul/Subsemnata, cunoscând prevederile art. 326 din Codul Penal cu privire la falsul în declarații, declar pe propria răspundere că în luna pentru care fac prezenta declarație de plată cu ora, în afara funcției/normei de bază, am desfășurat activități în regim de plată cu ora și/sau cu contract individual de muncă cu timp parțial și/sau activități în cadrul proiectelor respectând legislația muncii cu privire la numărul maxim de ore ce pot fi efectuate în cadrul activităților în afara funcției de bază/normei de bază, fără a depăși o medie de 4 ore/zi, respectiv o medie de 8 ore zilnic în anul universitar, cu respectarea duratei zilnice și săptămânale maxime legale a timpului de muncă și a perioadelor minime de repaus zilnic și săptămânal. De asemenea, declar că sunt de acord să pun la dispoziția instituțiilor abilitate, la solicitarea acestora, documentele doveditoare în scopul verificării și confirmării informațiilor furnizate prin această declarație.
+      </div>
+      <div class="certification-text">
+        Se certifică de noi ca orele declarate mai sus au fost efectuate de declarant întocmai.
+      </div>
+      <div class="signatures">
+        <div class="signature-section">
+          <div class="signature-title">DIRECTOR DEPARTAMENT</div>
+          <div class="signature-line"></div>
+          <div class="signature-name">{{user.directorDepartament}}</div>
         </div>
-        
-        <table class="coefficients-table">
-            <thead>
-                <tr>
-                    <th>Coeficienți</th>
-                    <th>Curs</th>
-                    <th>S/L/P/A</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>LR - Licența română</td>
-                    <td>2</td>
-                    <td>1</td>
-                </tr>
-                <tr>
-                    <td>LE - Licența engleză</td>
-                    <td>2.5</td>
-                    <td>1.25</td>
-                </tr>
-                <tr>
-                    <td>MR - Master română</td>
-                    <td>2.5</td>
-                    <td>1.5</td>
-                </tr>
-                <tr>
-                    <td>ME - Master engleză</td>
-                    <td>3.125</td>
-                    <td>1.875</td>
-                </tr>
-            </tbody>
-        </table>
-
-          <div class="explanation-text">
-            Subsemnatul/Subsemnata, cunoscând prevederile art. 326 din Codul Penal cu privire la falsul în declarații, declar pe propria răspundere că în luna pentru care fac prezenta declarație de plată cu ora, în afara funcției/normei de bază, am desfășurat activități în regim de plată cu ora și/sau cu contract individual de muncă cu timp parțial și/sau activități în cadrul proiectelor respectând legislația muncii cu privire la numărul maxim de ore ce pot fi efectuate în cadrul activităților în afara funcției de bază/normei de bază, fără a depăși o medie de 4 ore/zi, respectiv o medie de 8 ore zilnic în anul universitar, cu respectarea duratei zilnice și săptămânale maxime legale a timpului de muncă și a perioadelor minime de repaus zilnic și săptămânal. De asemenea, declar că sunt de acord să pun la dispoziția instituțiilor abilitate, la solicitarea acestora, documentele doveditoare în scopul verificării și confirmării informațiilor furnizate prin această declarație.
+        <div class="signature-section">
+          <div class="signature-title">DECLARANT</div>
+          <div class="signature-line"></div>
+          <div class="signature-name">{{user.declarant}}</div>
         </div>
-        
-        <div class="certification-text">
-            Se certifică de noi ca orele declarate mai sus au fost efectuate de declarant întocmai.
-        </div>
-        
-        <div class="signatures">
-            <div class="signature-section">
-                <div class="signature-title">DIRECTOR DEPARTAMENT</div>
-                <div class="signature-line"></div>
-                <div class="signature-name">{{user.directorDepartament}}</div>
-            </div>
-            
-            <div class="signature-section">
-                <div class="signature-title">DECLARANT</div>
-                <div class="signature-line"></div>
-                <div class="signature-name">{{user.declarant}}</div>
-            </div>
-        </div>
-
+      </div>
     </div>
   </body>
-  </div> 
+</div>
 
+<!-- Modal for PDF Preview -->
+<div class="pdf-modal" *ngIf="showPdfPreview">
+  <div class="pdf-modal-backdrop" (click)="closePdfPreview()"></div>
+  <div class="pdf-modal-content">
+    <button class="pdf-modal-close" (click)="closePdfPreview()">&times;</button>
+    <div id="pdf-content-preview">
+      <div class="container">
+        <div class="clearfix">
+          <div class="header">
+            <div class="university-name">{{user?.universitate}}</div>
+            <div class="university-name">{{user?.facultate}}</div>
+            <div class="university-name">{{user?.departament}}</div>
+          </div>
+          <div class="approval-section">
+            <div><strong>Aprobat,</strong></div>
+            <div><strong>Decan</strong></div>
+            <div style="margin-top: 20px;"><strong>{{user?.decan}}</strong></div>
+          </div>
+        </div>
+        <h3 class="title" style="font-size: 20px;">DECLARAȚIE</h3>
+        <div class="content" style="font-size: 14px;">
+          Subsemnatul(a), <strong id="declarant">{{user.declarant}}</strong>,
+          <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span>
+          în {{user.departament}} activități didactice după cum urmează:
+        </div>
+        <table class="activities-table">
+          <thead>
+            <tr class="header-main">
+              <th rowspan="2">Post din săpt.</th>
+              <th rowspan="2">Data</th>
+              <th colspan="4">Numărul ore fizice</th>
+              <th rowspan="2">Tip</th>
+              <th rowspan="2">Coef.</th>
+              <th rowspan="2">Nr. Ore</th>
+              <th rowspan="2">Anul, grupa, semigrupa</th>
+            </tr>
+            <tr>
+              <th>C</th>
+              <th>S</th>
+              <th>L/A</th>
+              <th>P</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of editablePdfTable; let i = index">
+              <td><input [(ngModel)]="row.post" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.data" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.c" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.s" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.la" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.p" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.tip" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.coef" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.nrOre" class="pdf-table-input" /></td>
+              <td><input [(ngModel)]="row.grupa" class="pdf-table-input" /></td>
+              <td><button (click)="removePdfTableRow(i)">🗑️</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button (click)="addPdfTableRow()">Adaugă rând</button>
+        <div class="signatures">
+          <div class="signature-section">
+            <div class="signature-title">DIRECTOR DEPARTAMENT</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">{{user.directorDepartament}}</div>
+          </div>
+          <div class="signature-section">
+            <div class="signature-title">DECLARANT</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">{{user.declarant}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-pdf" (click)="downloadPdfFromPreview()">Descarcă PDF</button>
+  </div>
 </div>
 
 <style>
-        body {
-            font-family: 'Times New Roman', serif;
-            margin: 20px;
-            line-height: 1.4;
-            background-color: #f8f9fa;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .header {
-            text-align: left;
-            margin-bottom: 30px;
-            font-size: 12px;
-            line-height: 1.3;
-        }
-        
-        .university-name {
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .approval-section {
-            float: right;
-            text-align: center;
-            margin-left: 20px;
-            margin-bottom: 20px;
-            font-size: 12px;
-        }
-        
-        .approval-section div {
-            margin-bottom: 5px;
-        }
-        
-        .title {
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 40px 0 30px 0;
-            clear: both;
-        }
-        
-        .content {
-            font-size: 12px;
-            text-align: justify;
-            clear: both;
-        }
-        
-        .highlight {
-            color: #0066cc;
-            font-weight: bold;
-        }
-        
-        .clearfix::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-    </style>
+  body {
+    font-family: 'Times New Roman', serif;
+    margin: 20px;
+    line-height: 1.4;
+    background-color: #f8f9fa;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .header {
+    text-align: left;
+    margin-bottom: 30px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .university-name {
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .approval-section {
+    float: right;
+    text-align: center;
+    margin-left: 20px;
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+  .approval-section div {
+    margin-bottom: 5px;
+  }
+  .title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 40px 0 30px 0;
+    clear: both;
+  }
+  .content {
+    font-size: 12px;
+    text-align: justify;
+    clear: both;
+  }
+  .highlight {
+    color: #0066cc;
+    font-weight: bold;
+  }
+  .clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  .calendar-icon-right {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+  }
+
+  /* Additional styles for the semester structure section */
+  .semester-structure-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+  }
+  .semester-structure-section h2,
+  .semester-structure-section h3 {
+    color: #333;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-group input[type="date"],
+  .form-group input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .form-actions {
+    margin-top: 20px;
+  }
+  .btn-primary,
+  .btn-success,
+  .btn-add {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  .btn-primary {
+    background-color: #007bff;
+    color: white;
+  }
+  .btn-success {
+    background-color: #28a745;
+    color: white;
+  }
+  .btn-add {
+    background-color: #17a2b8;
+    color: white;
+  }
+  .checkbox label {
+    display: flex;
+    align-items: center;
+  }
+  .checkbox input {
+    margin-right: 10px;
+  }
+</style>

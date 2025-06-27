@@ -8,6 +8,7 @@ const { validateRequiredFields } = require('../utils/validation');
  */
 exports.createSemesterConfig = async (req, res) => {
   try {
+     console.log('Primit de la frontend:', req.body);
     const {
       academicYear,
       semester,
@@ -57,16 +58,27 @@ exports.createSemesterConfig = async (req, res) => {
 
     await cfg.save();
     res.status(201).json(cfg);
-  } catch (err) {
-    console.error('Create semester config error:', err);
-    if (err.name === 'ValidationError') {
-      return res.status(400).json({ message: err.message });
-    }
-    if (err.code === 11000) {
-      return res.status(409).json({ message: 'Configurația pentru această facultate și semestru există deja' });
-    }
-    res.status(500).json({ message: 'Eroare de server' });
+ } catch (err) {
+  console.error('Create semester config error:', err);
+
+  if (err.name === 'ValidationError') {
+    // 🔑 Aici pui log-ul detaliat
+    console.error('ValidationError:', JSON.stringify(err.errors, null, 2));
+
+    return res.status(400).json({
+      message: err.message,
+      details: err.errors
+    });
   }
+
+  if (err.code === 11000) {
+    return res.status(409).json({ message: 'Configurația pentru această facultate și semestru există deja' });
+  }
+
+  res.status(500).json({ message: 'Eroare de server' });
+}
+
+
 };
 
 /**

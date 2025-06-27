@@ -8,36 +8,96 @@
       </ul>
     </div>
 
+   <!-- Înlocuiește div-ul cu .row.mb-3 cu: -->
+<div class="filter-bar d-flex flex-wrap justify-content-center align-items-center gap-3 mb-4">
+  <input
+    [(ngModel)]="filters.discipline"
+    [ngModelOptions]="{ standalone: true }"
+    class="form-control shadow-sm"
+    placeholder="Filtru disciplină"
+    style="min-width: 200px"
+  />
+
+  <select
+    [(ngModel)]="filters.activityType"
+    [ngModelOptions]="{ standalone: true }"
+    class="form-select shadow-sm"
+    style="min-width: 180px"
+  >
+    <option value="">Toate tipurile</option>
+    <option>LR</option>
+    <option>LE</option>
+    <option>MR</option>
+    <option>ME</option>
+  </select>
+
+  <input
+    [(ngModel)]="filters.academicYear"
+    [ngModelOptions]="{ standalone: true }"
+    class="form-control shadow-sm"
+    placeholder="Ex: 2024/2025"
+    style="min-width: 160px"
+  />
+
+  <select
+    [(ngModel)]="filters.semester"
+    [ngModelOptions]="{ standalone: true }"
+    class="form-select shadow-sm"
+    style="min-width: 180px"
+  >
+    <option value="">Toate semestrele</option>
+    <option [value]="1">1</option>
+    <option [value]="2">2</option>
+  </select>
+    <button type="button" class="btn btn-outline-primary" (click)="updateFilteredRows()">🔍 Aplică filtrele</button>
+  <button type="button" class="btn btn-outline-success" (click)="exportToExcel()">📤 Exportă Excel</button>
+
+</div>
+
+
+
+
+    <!-- Tabel -->
     <div class="table-responsive">
       <table class="table table-bordered table-sm">
-       <thead>
-  <tr>
-    <th>Nr. post</th>
-    <th>Grad post</th>
-    <th>Curs</th>
-    <th>Seminar</th>
-    <th>Laborator</th>
-    <th>Proiect</th>
-    <th>Tip activitate</th>
-    <th>Formație</th>
-    <th>Zi</th>
-    <th>Par/Impar</th>
-    <th>Disciplină</th> 
-    <th>Săptămână specială</th>
-    <th>Note</th>
-    <th>Facultate</th>
-    <th>Departament</th>
-    <th>An academic</th>
-    <th>Semestru</th>
-    <th>Ore totale</th>
-    <th>Acțiuni</th>
-  </tr>
-</thead>
-<tbody formArrayName="hours">
-  <tr *ngFor="let row of hours.controls; let i = index" [formGroupName]="i">
-    <td><input type="number" class="form-control" formControlName="postNumber" /></td>
+        <thead>
+          <tr>
+            <th><input type="checkbox" (change)="toggleAll($event)" /></th>
+            <th>Nr. post</th>
+            <th>Grad</th>
+            <th>Curs</th>
+            <th>Seminar</th>
+            <th>Lab</th>
+            <th>Proiect</th>
+            <th>Tip</th>
+            <th>Formație</th>
+            <th>Zi</th>
+            <th>Par/Impar</th>
+            <th>Disciplina</th>
+            <th>Săpt. specială</th>
+            <th>Note</th>
+            <th>Facultate</th>
+            <th>Departament</th>
+            <th>An</th>
+            <th>Sem.</th>
+            <th>Total</th>
+            <th>🗑️</th>
+          </tr>
+        </thead>
+        <tbody formArrayName="hours">
+  <tr *ngFor="let row of filteredRows; trackBy: trackByIndex" [formGroupName]="hours.controls.indexOf(row.ctrl)">
     <td>
-      <select class="form-control" formControlName="postGrade">
+      <input type="checkbox"
+             [(ngModel)]="selected[hours.controls.indexOf(row.ctrl)]"
+             [ngModelOptions]="{ standalone: true }" />
+    </td>
+
+    
+    <td><input type="number" class="form-control input-sm" formControlName="postNumber" /></td>
+
+   
+    <td>
+      <select class="form-control input-lg" formControlName="postGrade">
         <option>Prof</option>
         <option>Conf</option>
         <option>Lect</option>
@@ -45,21 +105,27 @@
         <option>Drd</option>
       </select>
     </td>
-    <td><input type="number" class="form-control" formControlName="courseHours" /></td>
-    <td><input type="number" class="form-control" formControlName="seminarHours" /></td>
-    <td><input type="number" class="form-control" formControlName="labHours" /></td>
-    <td><input type="number" class="form-control" formControlName="projectHours" /></td>
+
+    
+    <td><input type="number" class="form-control input-sm" formControlName="courseHours" /></td>
+    <td><input type="number" class="form-control input-sm" formControlName="seminarHours" /></td>
+    <td><input type="number" class="form-control input-sm" formControlName="labHours" /></td>
+    <td><input type="number" class="form-control input-sm" formControlName="projectHours" /></td>
+
     <td>
-      <select class="form-control" formControlName="activityType">
+      <select class="form-control input-lg" formControlName="activityType">
         <option>LR</option>
         <option>LE</option>
         <option>MR</option>
         <option>ME</option>
       </select>
     </td>
+
     <td><input class="form-control" formControlName="group" /></td>
+
+   
     <td>
-      <select formControlName="dayOfWeek" class="form-control day-select">
+      <select class="form-control input-lg" formControlName="dayOfWeek">
         <option>Luni</option>
         <option>Marti</option>
         <option>Miercuri</option>
@@ -69,45 +135,86 @@
         <option>Duminica</option>
       </select>
     </td>
+
     <td>
       <select class="form-control" formControlName="oddEven">
-        <option value="">Toate</option>
+        <option value="">—</option>
         <option value="Par">Par</option>
         <option value="Impar">Impar</option>
       </select>
     </td>
-    <td><input class="form-control" formControlName="disciplineName" /></td> 
+
+    <td><input class="form-control" formControlName="disciplineName" /></td>
+
     <td>
-  <select class="form-control" formControlName="specialWeek">
-    <option value="">—</option> 
-    <option *ngFor="let week of specialWeeks" [value]="week">{{ week }}</option>
-  </select>
-</td>
+      <select class="form-control" formControlName="specialWeek">
+        <option value="">—</option>
+        <option *ngFor="let week of specialWeeks" [value]="week">{{ week }}</option>
+      </select>
+    </td>
 
     <td><input class="form-control" formControlName="notes" /></td>
     <td><input class="form-control" formControlName="faculty" /></td>
     <td><input class="form-control" formControlName="department" /></td>
-    <td><input class="form-control" formControlName="academicYear" placeholder="ex: 2024/2025" /></td>
+    <td><input class="form-control" formControlName="academicYear" /></td>
+
     <td>
-  <select class="form-control" formControlName="semester">
-    <option [value]="1">1</option>
-    <option [value]="2">2</option>
-  </select>
-</td>
-   <td>
-  <input class="form-control" formControlName="totalHours" placeholder="Ore totale" />
-</td>
-    <td>
-      <button type="button" (click)="removeRow(i)" class="btn btn-danger btn-sm">🗑️</button>
+      <select class="form-control" formControlName="semester">
+        <option [value]="1">1</option>
+        <option [value]="2">2</option>
+      </select>
     </td>
- 
+
+    
+    <td>
+      <input class="form-control input-sm" formControlName="totalHours"
+             [disabled]="!row.ctrl.get('specialWeek')?.value" />
+    </td>
+
+    <td>
+      <button type="button" class="btn btn-danger btn-sm"
+              (click)="removeRow(hours.controls.indexOf(row.ctrl))">✖</button>
+    </td>
   </tr>
 </tbody>
 
       </table>
+       <button type="button" class="btn btn-secondary" (click)="addRow()">Adaugă rând</button>
+  <button type="submit" class="btn btn-primary ms-2" [disabled]="isSaving">
+    {{ isSaving ? 'Se salvează...' : 'Salvează' }}
+  </button>
     </div>
 
-    <button type="button" class="btn btn-secondary mt-3" (click)="addRow()">Adaugă rând</button>
-    <button type="submit" class="btn btn-primary mt-3">Salvează</button>
+
+   <!-- Butoane -->
+<div class="mass-edit-bar d-flex flex-wrap justify-content-center align-items-center gap-3 mt-4">
+  <select class="form-select shadow-sm" style="min-width: 200px"
+          [(ngModel)]="massEditField"
+          [ngModelOptions]="{ standalone: true }">
+    <option value="">— Câmp de modificat —</option>
+    <option value="postGrade">Grad post</option>
+    <option value="activityType">Tip activitate</option>
+    <option value="dayOfWeek">Zi</option>
+    <option value="oddEven">Par/Impar</option>
+    <option value="specialWeek">Săptămână specială</option>
+    <option value="semester">Semestru</option>
+    <option value="academicYear">An academic</option>
+  </select>
+
+  <input type="text"
+         class="form-control shadow-sm"
+         placeholder="Valoare"
+         style="min-width: 180px"
+         [(ngModel)]="massEditValue"
+         [ngModelOptions]="{ standalone: true }" />
+
+  <button type="button"
+          class="btn btn-outline-warning d-flex align-items-center gap-2 shadow-sm"
+          (click)="applyMassEdit(massEditField, massEditValue)">
+    <span>🖊️</span> Aplică
+  </button>
+</div>
+
+
   </form>
 </div>

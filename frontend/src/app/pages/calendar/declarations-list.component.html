@@ -1,0 +1,24 @@
+<div class="declarations-list-container">
+  <h2>Istoric Declarații</h2>
+  <div class="declarations-grid" *ngIf="declarations.length > 0; else noDeclarations">
+    <div class="declaration-card" *ngFor="let decl of declarations">
+      <div class="declaration-preview">
+        <img src="assets/images/pdf-svgrepo-com.svg" alt="PDF" class="pdf-icon" *ngIf="decl.pdfBase64; else noPdf" />
+        <ng-template #noPdf>
+          <div class="pdf-placeholder">PDF</div>
+        </ng-template>
+      </div>
+      <div class="declaration-info">
+        <div class="declaration-period">{{ decl.perioada.start | date:'dd.MM.yyyy' }} - {{ decl.perioada.end | date:'dd.MM.yyyy' }}</div>
+        <div class="declaration-date">Generată în {{ decl.dataCreare | date:'dd.MM.yyyy HH:mm' }}</div>
+      </div>
+      <div class="declaration-actions">
+        <button *ngIf="decl.pdfBase64" (click)="openPdf(decl)">Deschide PDF</button>
+        <button (click)="deleteDeclaration(decl)" style="color: red;">Șterge</button>
+      </div>
+    </div>
+  </div>
+  <ng-template #noDeclarations>
+    <p>Nu există declarații salvate.</p>
+  </ng-template>
+</div>

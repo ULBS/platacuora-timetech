@@ -8,28 +8,70 @@
   h1 {
     margin-bottom: 20px;
     color:  #0B2F63;
+    animation: fadeIn 0.6s ease-in-out;
   }
+
+  @keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
   
   p {
     font-size: 18px;
     color: #666;
-    margin-bottom: 40px;
+    margin-bottom: 60px;
   }
   
   .features {
     display: flex;
     justify-content: space-around;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 10px;
+    padding: 20px;
   }
   
   .feature-card {
-    background-color: #f5f5f5;
-    border-radius: 8px;
-    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 30px;
     width: 300px;
+    height: 400px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
+  }
+
+  .feature-card--clock {
+    position: relative;
+  }
+
+  .feature-card__clock {
+    position: absolute;
+    right: -70px; 
+    bottom: 16px;
+    width: 180px;
+    height: auto;
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .feature-card--calendar {
+    position: relative;
+  }
+
+  .feature-card__calendar {
+    position: absolute;
+    right: -70px; 
+    bottom: 16px;
+    width: 180px;
+    height: auto;
+    opacity: 0.9;
+    pointer-events: none;
   }
   
   .feature-card:hover {
@@ -39,4 +81,52 @@
   h3 {
     color:#0B2F63;
     margin-bottom: 10px;
+  }
+
+  .home-header {
+    margin: 0 0 32px 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .home-header__line {
+    width: 90%;
+    border: none;
+    border-top: 2px solid #225091;
+    margin-bottom: 8px;
+  }
+
+  .home-header__link {
+    position: absolute;
+    top: 15px;
+    right: 98px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-decoration: none;
+    
+
+  }
+
+  .header-link {
+    display: flex;
+    align-items: center;
+    color: #225091;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: color 0.2s;
+  }
+
+  .header-link__icon {
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    display: inline-block;
+  }
+
+  .header-link:hover {
+    color: #431373;
+    text-decoration: underline;
   }
