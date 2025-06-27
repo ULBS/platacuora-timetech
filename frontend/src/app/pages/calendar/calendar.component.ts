@@ -12,7 +12,6 @@ interface DateInfo {
   dayOfWeek: string;
   isWorkingDay: boolean | null;
   isEven: boolean;
-  oddEven?: string; 
 }
 
 @Component({
@@ -27,14 +26,10 @@ export class CalendarComponent implements OnInit {
   endDate: string = '';
   minDate: string = '2025-01-01';
   maxDate: string = '2050-12-31';
-  semesterNumber: number = 1;         
+    semesterNumber: number = 1;         
   isMedicine: boolean = false; 
   datesList: DateInfo[] = [];
   isLoading: boolean = false;
-
-  showPdfPreview = false;
-  editablePdfTable: any[] = [];
-
   selectedAcademicYear: string = '';
   selectedSemesterNumber: number = 1;
   user: any = null;
@@ -42,6 +37,7 @@ export class CalendarComponent implements OnInit {
   semesterEnd: string = '';
   oddWeekStart: boolean = true;
   currentConfigId: string | undefined;
+
   vacation = {
     name: '',
     startDate: '',
@@ -56,21 +52,22 @@ export class CalendarComponent implements OnInit {
     private semesterService: SemesterService
   ) {}
 
-  ngOnInit(): void {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      this.user = JSON.parse(savedUser);
-    } else {
-      this.user = {
-        universitate: 'Universitate Test',
-        facultate: 'Facultate Test',
-        departament: 'Departament Test',
-        declarant: 'Declarant Test',
-        decan: 'Decan Test',
-        directorDepartament: 'Director Test'
-      };
-    }
+ngOnInit(): void {
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    this.user = JSON.parse(savedUser);
+  } else {
+    this.user = {
+      universitate: 'Universitate Test',
+      facultate: 'Facultate Test',
+      departament: 'Departament Test',
+      declarant: 'Declarant Test',
+      decan: 'Decan Test',
+      directorDepartament: 'Director Test'
+    };
   }
+}
+
 
   formatDateForInput(date: Date): string {
     const year = date.getFullYear();
@@ -106,24 +103,20 @@ export class CalendarComponent implements OnInit {
 
   generateDates(): void {
     if (!this.validateDates()) return;
+
     this.isLoading = true;
     this.datesList = [];
+
     const currentDate = new Date(this.startDate);
     const end = new Date(this.endDate);
 
     while (currentDate <= end) {
-      const dateString = this.formatDateForDisplay(currentDate);
-      const dayOfWeek = this.daysOfWeek[currentDate.getDay()];
-      const dayNumber = currentDate.getDate();
-
       this.datesList.push({
-        date: dateString,
-        dayOfWeek: dayOfWeek,
+        date: this.formatDateForDisplay(currentDate),
+        dayOfWeek: this.daysOfWeek[currentDate.getDay()],
         isWorkingDay: null,
-        isEven: dayNumber % 2 === 0,
-        oddEven: dayNumber % 2 === 0 ? 'Par' : 'Impar' 
+        isEven: currentDate.getDate() % 2 === 0
       });
-
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -159,198 +152,175 @@ export class CalendarComponent implements OnInit {
     });
   }
 
-  saveSemesterStructure() {
-    const start = new Date(this.semesterStart);
-    const end = new Date(this.semesterEnd);
-    if (start >= end) {
-      alert('Data de început trebuie să fie înainte de data de sfârșit');
+ saveSemesterStructure() {
+  const start = new Date(this.semesterStart);
+  const end = new Date(this.semesterEnd);
+
+  if (start >= end) {
+    alert('Data de început trebuie să fie înainte de data de sfârșit');
+    return;
+  }
+
+  // Deducerea anului academic
+  let academicYear: string;
+  if (start.getMonth() + 1 >= 1 && start.getMonth() + 1 <= 9) {
+    // Semestru începe între ianuarie-septembrie
+    academicYear = `${start.getFullYear() - 1}/${start.getFullYear()}`;
+  } else {
+    academicYear = `${start.getFullYear()}/${start.getFullYear() + 1}`;
+  }
+
+  const config = {
+    academicYear,
+    semester: this.semesterNumber,
+    faculty: this.user?.facultate || '',
+    startDate: this.semesterStart,
+    endDate: this.semesterEnd,
+    isMedicine: this.isMedicine
+  };
+
+  // Înainte să creăm, verificăm dacă există deja
+  this.semesterService.getConfigsByFaculty(config.faculty, academicYear, this.semesterNumber).subscribe(existing => {
+    if (existing.length > 0) {
+      alert('Configurația pentru acest semestru și an există deja!');
       return;
     }
 
-    // Deducerea anului academic
-    let academicYear: string;
-    if (start.getMonth() + 1 >= 1 && start.getMonth() + 1 <= 9) {
-      academicYear = `${start.getFullYear() - 1}/${start.getFullYear()}`;
-    } else {
-      academicYear = `${start.getFullYear()}/${start.getFullYear() + 1}`;
-    }
+    // Creare configurație
+    this.semesterService.createConfig(config).subscribe({
+      next: (res) => {
+        console.log('RĂSPUNS backend:', res);
+        this.currentConfigId = res._id;
+        alert('Configurație salvată cu succes!');
 
-    const config = {
-      academicYear,
-      semester: this.semesterNumber,
-      faculty: this.user?.facultate || '',
-      startDate: this.semesterStart,
-      endDate: this.semesterEnd,
-      isMedicine: this.isMedicine
-    };
-
-    // Verificăm dacă există deja o configurație salvată
-    this.semesterService.getConfigsByFaculty(config.faculty, academicYear, this.semesterNumber).subscribe(existing => {
-      if (existing.length > 0) {
-        alert('Configurația pentru acest semestru și an există deja!');
-        return;
+        // Generăm automat săptămânile
+        this.generateWeeks();
+      },
+      error: (err) => {
+        console.error('Eroare detaliată backend:', err.error);
+        alert('Eroare la salvare: ' + (err.error?.message || err.message));
       }
-
-      // Creare configurație
-      this.semesterService.createConfig(config).subscribe({
-        next: (res) => {
-          console.log('RĂSPUNS backend:', res);
-          this.currentConfigId = res._id;
-          alert('Configurație salvată cu succes!');
-          // Generăm automat săptămânile
-          this.generateWeeks();
-        },
-        error: (err) => {
-          console.error('Eroare detaliată backend:', err.error);
-          alert('Eroare la salvare: ' + (err.error?.message || err.message));
-        }
-      });
     });
+  });
+} 
+
+calendarDays: {
+  date: Date | null;
+  weekType: string;
+  weekLabel: string;
+  isVacation: boolean;
+}[] = [];
+
+
+loadedSemester: any = null;
+
+loadSemesterCalendar() {
+  if (!this.selectedAcademicYear || !this.selectedSemesterNumber) {
+    alert('Completează anul academic și semestrul!');
+    return;
   }
 
-  loadSemesterCalendar() {
-    if (!this.selectedAcademicYear || !this.selectedSemesterNumber) {
-      alert('Completează anul academic și semestrul!');
-      return;
-    }
+  this.semesterService
+    .getConfigsByFaculty(this.user.facultate, this.selectedAcademicYear, this.selectedSemesterNumber)
+    .subscribe({
+      next: configs => {
+        if (configs.length === 0) {
+          alert('Nu există calendar pentru aceste criterii!');
+        } else {
+          // Datele din backend vin și se afișează în input-uri
+          this.loadedSemester = configs[0];
 
-    this.semesterService.getConfigsByFaculty(this.user.facultate, this.selectedAcademicYear, this.selectedSemesterNumber)
-      .subscribe({
-        next: configs => {
-          if (configs.length === 0) {
-            alert('Nu există calendar pentru aceste criterii!');
-          } else {
-            this.loadedSemester = configs[0];
-            this.loadedSemester.weeks.forEach((w: any) => {
-              w.startDate = new Date(w.startDate).toISOString().split('T')[0];
-            });
-            this.loadedSemester.specialWeeks.forEach((v: any) => {
-              v.startDate = new Date(v.startDate).toISOString().split('T')[0];
-              v.endDate = new Date(v.endDate).toISOString().split('T')[0];
-            });
-          }
-        },
-        error: err => {
-          console.error('Eroare la încărcare:', err);
-          alert('Eroare la încărcare calendar!');
+          // Transform datele pentru input de tip date (dacă nu sunt deja în format ISO)
+          this.loadedSemester.weeks.forEach((w: any) => {
+            w.startDate = new Date(w.startDate).toISOString().split('T')[0];
+          });
+          this.loadedSemester.specialWeeks.forEach((v: any) => {
+            v.startDate = new Date(v.startDate).toISOString().split('T')[0];
+            v.endDate = new Date(v.endDate).toISOString().split('T')[0];
+          });
         }
-      });
-  }
-
-  saveEditedSemester() {
-    if (!this.loadedSemester || !this.loadedSemester._id) {
-      alert('Calendarul nu este încărcat!');
-      return;
-    }
-
-    this.semesterService.updateSemesterConfig(this.loadedSemester._id, {
-      weeks: this.loadedSemester.weeks,
-      specialWeeks: this.loadedSemester.specialWeeks
-    }).subscribe({
-      next: () => alert('Calendar salvat cu succes!'),
+      },
       error: err => {
-        console.error('Eroare la salvare:', err);
-        alert('Eroare la salvare!');
+        console.error('Eroare la încărcare:', err);
+        alert('Eroare la încărcare calendar!');
       }
     });
+}
+
+saveEditedSemester() {
+  if (!this.loadedSemester || !this.loadedSemester._id) {
+    alert('Calendarul nu este încărcat!');
+    return;
   }
 
-  openPdfPreview() {
-    this.editablePdfTable = this.datesList.map(date => ({
-      post: '',
-      data: date.date,
-      c: '',
-      s: '',
-      la: '',
-      p: '',
-      tip: '',
-      coef: '',
-      nrOre: '',
-      grupa: ''
-    }));
-    this.showPdfPreview = true;
-  }
+  // Trimitem datele editate
+  this.semesterService.updateSemesterConfig(this.loadedSemester._id, {
+    weeks: this.loadedSemester.weeks,
+    specialWeeks: this.loadedSemester.specialWeeks
+  }).subscribe({
+    next: () => alert('Calendar salvat cu succes!'),
+    error: err => {
+      console.error('Eroare la salvare:', err);
+      alert('Eroare la salvare!');
+    }
+  });
+}
 
-  closePdfPreview() {
-    this.showPdfPreview = false;
-  }
+  generateCalendarGrid(semesterData: any) {
+    const start = new Date(semesterData.startDate);
+    const end = new Date(semesterData.endDate);
+    const specialWeeks = semesterData.specialWeeks || [];
+    const weeks = semesterData.weeks || [];
 
-  addPdfTableRow() {
-    this.editablePdfTable.push({
-      post: '', data: '', c: '', s: '', la: '', p: '', tip: '', coef: '', nrOre: '', grupa: ''
-    });
-  }
+    this.calendarDays = [];
+    const current = new Date(start);
 
-  removePdfTableRow(index: number) {
-    this.editablePdfTable.splice(index, 1);
-  }
+    while (current <= end) {
+      const week = weeks.find((w: any) =>
+        new Date(w.startDate).toDateString() === current.toDateString()
+      );
 
-  async downloadPdfFromPreview() {
-    const element = document.getElementById('pdf-content-preview');
-    if (!element) return;
-
-    const removeButtons = element.querySelectorAll('button');
-    const originalDisplay: string[] = [];
-    removeButtons.forEach((btn, idx) => {
-      originalDisplay[idx] = (btn as HTMLElement).style.display;
-      (btn as HTMLElement).style.display = 'none';
-    });
-
-    try {
-      const html2pdf = await import('html2pdf.js');
-      const opt = {
-        margin: 10,
-        filename: 'declaratie-activitati-didactice.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      };
-      const worker = html2pdf.default().set(opt).from(element);
-      const pdfBlob = await worker.output('blob');
-      const pdfBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
+      const special = specialWeeks.find((v: any) => {
+        const vacStart = new Date(v.startDate);
+        const vacEnd = new Date(v.endDate);
+        return current >= vacStart && current <= vacEnd;
       });
 
-      const userId = this.user?.id || this.user?._id;
-      if (!userId) {
-        alert('Nu există utilizator autentificat. Nu se poate salva declarația.');
-        return;
+      this.calendarDays.push({
+        date: new Date(current),
+        weekType: week ? week.weekType : '',
+        weekLabel: week ? week.weekNumber : '',
+        isVacation: !!special
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    const firstValid = this.calendarDays.find(day => day.date !== null);
+    if (firstValid && firstValid.date) {
+      const firstDay = firstValid.date.getDay();
+      const offset = (firstDay + 6) % 7; // Luni = 0
+      for (let i = 0; i < offset; i++) {
+        this.calendarDays.unshift({
+          date: null,
+          weekType: '',
+          weekLabel: '',
+          isVacation: false
+        });
       }
-
-      const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
-      const newDeclaration = {
-        id: Date.now(),
-        userId: userId,
-        perioada: { start: this.startDate, end: this.endDate },
-        activitati: this.editablePdfTable,
-        status: 'generata' as const,
-        dataCreare: new Date().toISOString(),
-        pdfBase64: pdfBase64
-      };
-
-      declarations.push(newDeclaration);
-      localStorage.setItem('declarations', JSON.stringify(declarations));
-
-      await worker.save();
-      alert('Declarația a fost salvată în istoric!');
-    } catch (error) {
-      console.error('Eroare la generarea PDF:', error);
-      alert('Eroare la generarea PDF-ului.');
-    } finally {
-      removeButtons.forEach((btn, idx) => {
-        (btn as HTMLElement).style.display = originalDisplay[idx] || '';
-      });
     }
   }
+
+toDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
 
   generateWeeks() {
     if (!this.currentConfigId) {
       alert('Trebuie să salvezi configurația mai întâi!');
       return;
     }
+
     this.semesterService.generateWeeks(this.currentConfigId, this.oddWeekStart).subscribe({
       next: () => alert('Săptămânile au fost generate'),
       error: (err) => alert('Eroare: ' + err.message)
@@ -362,6 +332,7 @@ export class CalendarComponent implements OnInit {
       alert('Trebuie să salvezi configurația mai întâi!');
       return;
     }
+
     this.semesterService.addVacationPeriod(this.currentConfigId, this.vacation).subscribe({
       next: () => alert('Vacanță adăugată'),
       error: (err) => alert('Eroare: ' + err.message)
@@ -371,7 +342,6 @@ export class CalendarComponent implements OnInit {
   async generatePDFDeclaration() {
     const element = document.getElementById('pdf-content');
     if (!element) return;
-
     element.style.display = 'block';
 
     const html2pdf = await import('html2pdf.js');
