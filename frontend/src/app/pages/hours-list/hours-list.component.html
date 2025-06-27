@@ -92,10 +92,10 @@
              [ngModelOptions]="{ standalone: true }" />
     </td>
 
-    <!-- Coloane mici -->
+    
     <td><input type="number" class="form-control input-sm" formControlName="postNumber" /></td>
 
-    <!-- Grad (mai mare) -->
+   
     <td>
       <select class="form-control input-lg" formControlName="postGrade">
         <option>Prof</option>
@@ -106,13 +106,12 @@
       </select>
     </td>
 
-    <!-- Ore (mici) -->
+    
     <td><input type="number" class="form-control input-sm" formControlName="courseHours" /></td>
     <td><input type="number" class="form-control input-sm" formControlName="seminarHours" /></td>
     <td><input type="number" class="form-control input-sm" formControlName="labHours" /></td>
     <td><input type="number" class="form-control input-sm" formControlName="projectHours" /></td>
 
-    <!-- Tip (mare) -->
     <td>
       <select class="form-control input-lg" formControlName="activityType">
         <option>LR</option>
@@ -124,7 +123,7 @@
 
     <td><input class="form-control" formControlName="group" /></td>
 
-    <!-- Zi (mare) -->
+   
     <td>
       <select class="form-control input-lg" formControlName="dayOfWeek">
         <option>Luni</option>
@@ -166,7 +165,7 @@
       </select>
     </td>
 
-    <!-- Total (mic) -->
+    
     <td>
       <input class="form-control input-sm" formControlName="totalHours"
              [disabled]="!row.ctrl.get('specialWeek')?.value" />
@@ -180,7 +179,12 @@
 </tbody>
 
       </table>
+       <button type="button" class="btn btn-secondary" (click)="addRow()">Adaugă rând</button>
+  <button type="submit" class="btn btn-primary ms-2" [disabled]="isSaving">
+    {{ isSaving ? 'Se salvează...' : 'Salvează' }}
+  </button>
     </div>
+
 
    <!-- Butoane -->
 <div class="mass-edit-bar d-flex flex-wrap justify-content-center align-items-center gap-3 mt-4">
