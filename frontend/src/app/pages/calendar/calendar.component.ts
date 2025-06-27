@@ -42,6 +42,7 @@ export class CalendarComponent implements OnInit {
   semesterEnd: string = '';
   oddWeekStart: boolean = true;
   currentConfigId: string | undefined;
+  loadedSemester: any = null;
   vacation = {
     name: '',
     startDate: '',
