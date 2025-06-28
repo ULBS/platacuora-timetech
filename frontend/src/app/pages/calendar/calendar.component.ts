@@ -12,7 +12,18 @@ interface DateInfo {
   dayOfWeek: string;
   isWorkingDay: boolean | null;
   isEven: boolean;
-  oddEven?: string; 
+}
+
+interface WeekInfo {
+  weekNumber: string;
+  startDate: string;
+  weekType: 'Par' | 'Impar';
+}
+
+interface SpecialWeek {
+  name: string;
+  startDate: string;
+  endDate: string;
 }
 
 @Component({
@@ -23,6 +34,9 @@ interface DateInfo {
   styleUrls: ['./calendar.component.scss']
 })
 export class CalendarComponent implements OnInit {
+markWeekAsModified(_t120: any) {
+throw new Error('Method not implemented.');
+}
   startDate: string = '';
   endDate: string = '';
   minDate: string = '2025-01-01';
@@ -31,10 +45,6 @@ export class CalendarComponent implements OnInit {
   isMedicine: boolean = false; 
   datesList: DateInfo[] = [];
   isLoading: boolean = false;
-
-  showPdfPreview = false;
-  editablePdfTable: any[] = [];
-
   selectedAcademicYear: string = '';
   selectedSemesterNumber: number = 1;
   user: any = null;
@@ -50,6 +60,18 @@ export class CalendarComponent implements OnInit {
   };
 
   daysOfWeek: string[] = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+
+  calendarDays: {
+    date: Date | null;
+    weekType: string;
+    weekLabel: string;
+    isVacation: boolean;
+  }[] = [];
+
+  loadedSemester: any = null;
+
+  editablePdfTable: any[] = [];
+  showPdfPreview: boolean = false;
 
   constructor(
     private http: HttpClient,
@@ -105,172 +127,48 @@ export class CalendarComponent implements OnInit {
     return true;
   }
 
-  generateDates(): void {
-    if (!this.validateDates()) return;
-    this.isLoading = true;
-    this.datesList = [];
-    const currentDate = new Date(this.startDate);
-    const end = new Date(this.endDate);
+ generateDates(): void {
+  if (!this.validateDates()) return;
 
-    while (currentDate <= end) {
-      const dateString = this.formatDateForDisplay(currentDate);
-      const dayOfWeek = this.daysOfWeek[currentDate.getDay()];
-      const dayNumber = currentDate.getDate();
+  this.isLoading = true;
+  this.datesList = [];
 
-      this.datesList.push({
-        date: dateString,
-        dayOfWeek: dayOfWeek,
-        isWorkingDay: null,
-        isEven: dayNumber % 2 === 0,
-        oddEven: dayNumber % 2 === 0 ? 'Par' : 'Impar' 
-      });
+  const currentDate = new Date(this.startDate);
+  const end = new Date(this.endDate);
 
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    this.checkWorkingDays();
+  if (this.loadedSemester) {
+    console.log('Folosesc configurația locală încărcată...');
+    this.generateDatesWithWeekInfo(currentDate, end, this.loadedSemester);
+  } else {
+    this.loadSemesterStructureForDates(currentDate, end);
   }
+}
 
-  checkWorkingDays(): void {
-    const uniqueYears = new Set<number>();
-    this.datesList.forEach(date => {
-      const year = parseInt(date.date.split('.')[2]);
-      uniqueYears.add(year);
-    });
 
-    const holidayRequests: { [year: number]: Observable<HolidayResponse[]> } = {};
-    uniqueYears.forEach(year => {
-      holidayRequests[year] = this.calendarService.getPublicHolidays(year).pipe(catchError(() => of([])));
-    });
-
-    if (Object.keys(holidayRequests).length === 0) {
-      this.isLoading = false;
-      return;
-    }
-
-    forkJoin(holidayRequests).subscribe(results => {
-      const allHolidays: HolidayResponse[] = [];
-      Object.values(results).forEach(arr => allHolidays.push(...arr));
-      this.datesList.forEach(date => {
-        const [dd, mm, yyyy] = date.date.split('.');
-        const d = new Date(`${yyyy}-${mm}-${dd}`);
-        date.isWorkingDay = this.calendarService.isWorkingDay(d, allHolidays);
-      });
-      this.isLoading = false;
-    });
+   openPdfPreview() {
+  const workingDays = this.datesList.filter(date => date.isWorkingDay === true);
+  
+  if (workingDays.length === 0) {
+    alert('Nu există zile lucrătoare selectate pentru a genera declarația!');
+    return;
   }
+  
+  this.editablePdfTable = workingDays.map(date => ({
+    post: '',
+    data: date.date,
+    c: '',
+    s: '',
+    la: '',
+    p: '',
+    tip: '',
+    coef: '',
+    nrOre: '',
+    grupa: ''
+  }));
+  
+  this.showPdfPreview = true;
+}
 
-  saveSemesterStructure() {
-    const start = new Date(this.semesterStart);
-    const end = new Date(this.semesterEnd);
-    if (start >= end) {
-      alert('Data de început trebuie să fie înainte de data de sfârșit');
-      return;
-    }
-
-    // Deducerea anului academic
-    let academicYear: string;
-    if (start.getMonth() + 1 >= 1 && start.getMonth() + 1 <= 9) {
-      academicYear = `${start.getFullYear() - 1}/${start.getFullYear()}`;
-    } else {
-      academicYear = `${start.getFullYear()}/${start.getFullYear() + 1}`;
-    }
-
-    const config = {
-      academicYear,
-      semester: this.semesterNumber,
-      faculty: this.user?.facultate || '',
-      startDate: this.semesterStart,
-      endDate: this.semesterEnd,
-      isMedicine: this.isMedicine
-    };
-
-    // Verificăm dacă există deja o configurație salvată
-    this.semesterService.getConfigsByFaculty(config.faculty, academicYear, this.semesterNumber).subscribe(existing => {
-      if (existing.length > 0) {
-        alert('Configurația pentru acest semestru și an există deja!');
-        return;
-      }
-
-      // Creare configurație
-      this.semesterService.createConfig(config).subscribe({
-        next: (res) => {
-          console.log('RĂSPUNS backend:', res);
-          this.currentConfigId = res._id;
-          alert('Configurație salvată cu succes!');
-          // Generăm automat săptămânile
-          this.generateWeeks();
-        },
-        error: (err) => {
-          console.error('Eroare detaliată backend:', err.error);
-          alert('Eroare la salvare: ' + (err.error?.message || err.message));
-        }
-      });
-    });
-  }
-
-  loadSemesterCalendar() {
-    if (!this.selectedAcademicYear || !this.selectedSemesterNumber) {
-      alert('Completează anul academic și semestrul!');
-      return;
-    }
-
-    this.semesterService.getConfigsByFaculty(this.user.facultate, this.selectedAcademicYear, this.selectedSemesterNumber)
-      .subscribe({
-        next: configs => {
-          if (configs.length === 0) {
-            alert('Nu există calendar pentru aceste criterii!');
-          } else {
-            this.loadedSemester = configs[0];
-            this.loadedSemester.weeks.forEach((w: any) => {
-              w.startDate = new Date(w.startDate).toISOString().split('T')[0];
-            });
-            this.loadedSemester.specialWeeks.forEach((v: any) => {
-              v.startDate = new Date(v.startDate).toISOString().split('T')[0];
-              v.endDate = new Date(v.endDate).toISOString().split('T')[0];
-            });
-          }
-        },
-        error: err => {
-          console.error('Eroare la încărcare:', err);
-          alert('Eroare la încărcare calendar!');
-        }
-      });
-  }
-
-  saveEditedSemester() {
-    if (!this.loadedSemester || !this.loadedSemester._id) {
-      alert('Calendarul nu este încărcat!');
-      return;
-    }
-
-    this.semesterService.updateSemesterConfig(this.loadedSemester._id, {
-      weeks: this.loadedSemester.weeks,
-      specialWeeks: this.loadedSemester.specialWeeks
-    }).subscribe({
-      next: () => alert('Calendar salvat cu succes!'),
-      error: err => {
-        console.error('Eroare la salvare:', err);
-        alert('Eroare la salvare!');
-      }
-    });
-  }
-
-  openPdfPreview() {
-    this.editablePdfTable = this.datesList.map(date => ({
-      post: '',
-      data: date.date,
-      c: '',
-      s: '',
-      la: '',
-      p: '',
-      tip: '',
-      coef: '',
-      nrOre: '',
-      grupa: ''
-    }));
-    this.showPdfPreview = true;
-  }
 
   closePdfPreview() {
     this.showPdfPreview = false;
@@ -347,22 +245,414 @@ export class CalendarComponent implements OnInit {
     }
   }
 
+  private loadSemesterStructureForDates(startDate: Date, endDate: Date): void {
+    let academicYear: string;
+    if (startDate.getMonth() + 1 >= 1 && startDate.getMonth() + 1 <= 9) {
+      academicYear = `${startDate.getFullYear() - 1}/${startDate.getFullYear()}`;
+    } else {
+      academicYear = `${startDate.getFullYear()}/${startDate.getFullYear() + 1}`;
+    }
+
+    let semesterNumber: number;
+    const month = startDate.getMonth() + 1;
+    if (month >= 1 && month <= 6) {
+      semesterNumber = 2; 
+    } else {
+      semesterNumber = 1; 
+    }
+
+    console.log(`Căutăm configurația pentru: ${this.user.facultate}, ${academicYear}, semestrul ${semesterNumber}`);
+
+    this.semesterService.getConfigsByFaculty(this.user.facultate, academicYear, semesterNumber).subscribe({
+      next: configs => {
+        console.log('Configurații găsite:', configs);
+        if (configs.length > 0) {
+          const semesterConfig = configs[0];
+          this.generateDatesWithWeekInfo(startDate, endDate, semesterConfig);
+        } else {
+          console.log('Nu există configurație, folosim logica implicită');
+          this.generateDatesWithoutWeekInfo(startDate, endDate);
+        }
+      },
+      error: err => {
+        console.error('Eroare la încărcarea configurației:', err);
+        this.generateDatesWithoutWeekInfo(startDate, endDate);
+      }
+    });
+  }
+
+  private generateDatesWithWeekInfo(startDate: Date, endDate: Date, semesterConfig: any): void {
+    const currentDate = new Date(startDate);
+    
+    console.log('Configurația semestrului încărcată:', semesterConfig);
+    console.log('Săptămânile disponibile:', semesterConfig.weeks);
+    
+    while (currentDate <= endDate) {
+      const weekInfo = this.getWeekTypeForDate(currentDate, semesterConfig);
+      
+      this.datesList.push({
+        date: this.formatDateForDisplay(currentDate),
+        dayOfWeek: this.daysOfWeek[currentDate.getDay()],
+        isWorkingDay: null,
+        isEven: weekInfo.weekType === 'Par'
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    this.checkWorkingDays();
+  }
+
+  private generateDatesWithoutWeekInfo(startDate: Date, endDate: Date): void {
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      this.datesList.push({
+        date: this.formatDateForDisplay(currentDate),
+        dayOfWeek: this.daysOfWeek[currentDate.getDay()],
+        isWorkingDay: null,
+        isEven: currentDate.getDate() % 2 === 0 
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    this.checkWorkingDays();
+  }
+
+  private getWeekTypeForDate(date: Date, semesterConfig: any): { weekType: 'Par' | 'Impar', weekNumber: string } {
+    const weeks = semesterConfig.weeks || [];
+    
+    for (const week of weeks) {
+      const weekStart = new Date(week.startDate);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6); 
+      
+      console.log(`Verificăm data ${date.toDateString()} cu săptămâna ${week.weekNumber} (${week.weekType}): ${weekStart.toDateString()} - ${weekEnd.toDateString()}`);
+      
+      if (date >= weekStart && date <= weekEnd) {
+        console.log(`Găsită! Data ${date.toDateString()} aparține săptămânii ${week.weekNumber} (${week.weekType})`);
+        return {
+          weekType: week.weekType,
+          weekNumber: week.weekNumber
+        };
+      }
+    }
+    
+    let closestWeek = null;
+    let minDistance = Infinity;
+    
+    for (const week of weeks) {
+      const weekStart = new Date(week.startDate);
+      const distance = Math.abs(date.getTime() - weekStart.getTime());
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestWeek = week;
+      }
+    }
+    
+    if (closestWeek) {
+      const closestWeekStart = new Date(closestWeek.startDate);
+      const daysDiff = Math.floor((date.getTime() - closestWeekStart.getTime()) / (1000 * 60 * 60 * 24));
+      const weeksDiff = Math.floor(daysDiff / 7);
+      
+      let weekType: 'Par' | 'Impar';
+      if (closestWeek.weekType === 'Par') {
+        weekType = (weeksDiff % 2 === 0) ? 'Par' : 'Impar';
+      } else {
+        weekType = (weeksDiff % 2 === 0) ? 'Impar' : 'Par';
+      }
+      
+      console.log(`Calculat pentru data ${date.toDateString()}: ${weekType} (bazat pe săptămâna ${closestWeek.weekNumber})`);
+      
+      return {
+        weekType: weekType,
+        weekNumber: `Calc-${Math.abs(weeksDiff)}`
+      };
+    }
+    
+    console.log(`Fallback pentru data ${date.toDateString()}: Impar`);
+    return { weekType: 'Impar', weekNumber: '1' };
+  }
+
+  checkWorkingDays(): void {
+    const uniqueYears = new Set<number>();
+    this.datesList.forEach(date => {
+      const year = parseInt(date.date.split('.')[2]);
+      uniqueYears.add(year);
+    });
+
+    const holidayRequests: { [year: number]: Observable<HolidayResponse[]> } = {};
+    uniqueYears.forEach(year => {
+      holidayRequests[year] = this.calendarService.getPublicHolidays(year).pipe(catchError(() => of([])));
+    });
+
+    if (Object.keys(holidayRequests).length === 0) {
+      this.isLoading = false;
+      return;
+    }
+
+    forkJoin(holidayRequests).subscribe(results => {
+      const allHolidays: HolidayResponse[] = [];
+      Object.values(results).forEach(arr => allHolidays.push(...arr));
+      this.datesList.forEach(date => {
+        const [dd, mm, yyyy] = date.date.split('.');
+        const d = new Date(`${yyyy}-${mm}-${dd}`);
+        date.isWorkingDay = this.calendarService.isWorkingDay(d, allHolidays);
+      });
+      this.isLoading = false;
+    });
+  }
+
+  saveSemesterStructure() {
+    const start = new Date(this.semesterStart);
+    const end = new Date(this.semesterEnd);
+
+    if (start >= end) {
+      alert('Data de început trebuie să fie înainte de data de sfârșit');
+      return;
+    }
+
+    let academicYear: string;
+    if (start.getMonth() + 1 >= 1 && start.getMonth() + 1 <= 9) {
+      academicYear = `${start.getFullYear() - 1}/${start.getFullYear()}`;
+    } else {
+      academicYear = `${start.getFullYear()}/${start.getFullYear() + 1}`;
+    }
+
+    const config = {
+      academicYear,
+      semester: this.semesterNumber,
+      faculty: this.user?.facultate || '',
+      startDate: this.semesterStart,
+      endDate: this.semesterEnd,
+      isMedicine: this.isMedicine
+    };
+
+    this.semesterService.getConfigsByFaculty(config.faculty, academicYear, this.semesterNumber).subscribe(existing => {
+      if (existing.length > 0) {
+        alert('Configurația pentru acest semestru și an există deja!');
+        return;
+      }
+      this.semesterService.createConfig(config).subscribe({
+        next: (res) => {
+          console.log('RĂSPUNS backend:', res);
+          this.currentConfigId = res._id;
+          alert('Configurație salvată cu succes!');
+
+          this.generateWeeks();
+        },
+        error: (err) => {
+          console.error('Eroare detaliată backend:', err.error);
+          alert('Eroare la salvare: ' + (err.error?.message || err.message));
+        }
+      });
+    });
+  } 
+
+  loadSemesterCalendar() {
+    if (!this.selectedAcademicYear || !this.selectedSemesterNumber) {
+      alert('Completează anul academic și semestrul!');
+      return;
+    }
+
+    this.semesterService
+      .getConfigsByFaculty(this.user.facultate, this.selectedAcademicYear, this.selectedSemesterNumber)
+      .subscribe({
+        next: configs => {
+          if (configs.length === 0) {
+            alert('Nu există calendar pentru aceste criterii!');
+          } else {
+            this.loadedSemester = configs[0];
+            this.loadedSemester.weeks.forEach((w: any) => {
+              w.startDate = new Date(w.startDate).toISOString().split('T')[0];
+            });
+            this.loadedSemester.specialWeeks.forEach((v: any) => {
+              v.startDate = new Date(v.startDate).toISOString().split('T')[0];
+              v.endDate = new Date(v.endDate).toISOString().split('T')[0];
+            });
+          }
+        },
+        error: err => {
+          console.error('Eroare la încărcare:', err);
+          alert('Eroare la încărcare calendar!');
+        }
+      });
+  }
+
+ 
+ saveEditedSemester() {
+  if (!this.loadedSemester || !this.loadedSemester._id) {
+    alert('Calendarul nu este încărcat!');
+    return;
+  }
+
+  const updateData = {
+    weeks: this.loadedSemester.weeks.map((week: any) => ({
+      weekNumber: week.weekNumber,
+      startDate: week.startDate,
+      weekType: week.weekType // 'Par' sau 'Impar
+    })),
+    specialWeeks: this.loadedSemester.specialWeeks.map((special: any) => ({
+      name: special.name,
+      startDate: special.startDate,
+      endDate: special.endDate
+    }))
+  };
+
+  console.log('Salvez modificările:', updateData);
+
+  this.semesterService.updateSemesterConfig(this.loadedSemester._id, updateData).subscribe({
+    next: (response) => {
+      console.log('Calendar salvat cu succes:', response);
+      alert('Calendar salvat cu succes!');
+      
+      if (response) {
+        this.loadedSemester = { ...this.loadedSemester, ...response };
+        
+        this.loadedSemester.weeks.forEach((w: any) => {
+          w.startDate = new Date(w.startDate).toISOString().split('T')[0];
+        });
+        this.loadedSemester.specialWeeks.forEach((v: any) => {
+          v.startDate = new Date(v.startDate).toISOString().split('T')[0];
+          v.endDate = new Date(v.endDate).toISOString().split('T')[0];
+        });
+      }
+      
+      // IMPORTANT: Actualizează automat calendarul generat cu noua configurație
+      if (this.datesList.length > 0) {
+        this.refreshGeneratedDatesWithNewConfig();
+      }
+    },
+    error: err => {
+      console.error('Eroare la salvare:', err);
+      alert('Eroare la salvare: ' + (err.error?.message || err.message));
+    }
+  });
+}
+
+
+private refreshGeneratedDatesWithNewConfig(): void {
+  console.log('Actualizez calendarul generat cu configurația modificată...');
+  
+  if (!this.loadedSemester || this.datesList.length === 0) {
+    return;
+  }
+
+  // Actualizăm paritatea pentru fiecare dată din lista generată
+  this.datesList.forEach(dateInfo => {
+    const [day, month, year] = dateInfo.date.split('.');
+    const currentDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    const weekInfo = this.getWeekTypeForDate(currentDate, this.loadedSemester);
+    dateInfo.isEven = weekInfo.weekType === 'Par';
+  });
+
+  console.log('Calendar actualizat cu succes!');
+}
+
+  regenerateDatesWithUpdatedConfig(): void {
+    if (!this.startDate || !this.endDate) {
+      alert('Selectează mai întâi intervalul de date și generează calendarul!');
+      return;
+    }
+
+    // Regenerăm datele cu configurația actualizată
+    this.generateDates();
+  }
+
+  onWeekTypeChange(week: any): void {
+  console.log('Tipul săptămânii modificat:', week);
+  
+  if (this.datesList.length > 0 && this.loadedSemester) {
+    this.refreshGeneratedDatesWithNewConfig();
+  }
+}
+  
+
+  generateCalendarGrid(semesterData: any) {
+    const start = new Date(semesterData.startDate);
+    const end = new Date(semesterData.endDate);
+    const specialWeeks = semesterData.specialWeeks || [];
+    const weeks = semesterData.weeks || [];
+
+    this.calendarDays = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      const week = weeks.find((w: any) =>
+        new Date(w.startDate).toDateString() === current.toDateString()
+      );
+
+      const special = specialWeeks.find((v: any) => {
+        const vacStart = new Date(v.startDate);
+        const vacEnd = new Date(v.endDate);
+        return current >= vacStart && current <= vacEnd;
+      });
+
+      this.calendarDays.push({
+        date: new Date(current),
+        weekType: week ? week.weekType : '',
+        weekLabel: week ? week.weekNumber : '',
+        isVacation: !!special
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    const firstValid = this.calendarDays.find(day => day.date !== null);
+    if (firstValid && firstValid.date) {
+      const firstDay = firstValid.date.getDay();
+      const offset = (firstDay + 6) % 7; // Luni = 0
+      for (let i = 0; i < offset; i++) {
+        this.calendarDays.unshift({
+          date: null,
+          weekType: '',
+          weekLabel: '',
+          isVacation: false
+        });
+      }
+    }
+  }
+
+  toDateString(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
   generateWeeks() {
     if (!this.currentConfigId) {
       alert('Trebuie să salvezi configurația mai întâi!');
       return;
     }
+
     this.semesterService.generateWeeks(this.currentConfigId, this.oddWeekStart).subscribe({
       next: () => alert('Săptămânile au fost generate'),
       error: (err) => alert('Eroare: ' + err.message)
     });
   }
 
+  refreshCalendarWithCurrentConfig(): void {
+  if (!this.startDate || !this.endDate) {
+    alert('Selectează mai întâi intervalul de date!');
+    return;
+  }
+
+  if (!this.loadedSemester) {
+    alert('Nu există configurație încărcată pentru actualizare!');
+    return;
+  }
+
+  console.log('Refresh manual cu configurația curentă...');
+  this.generateDates();
+}
+
   addVacation() {
     if (!this.currentConfigId) {
       alert('Trebuie să salvezi configurația mai întâi!');
       return;
     }
+
     this.semesterService.addVacationPeriod(this.currentConfigId, this.vacation).subscribe({
       next: () => alert('Vacanță adăugată'),
       error: (err) => alert('Eroare: ' + err.message)
@@ -372,7 +662,6 @@ export class CalendarComponent implements OnInit {
   async generatePDFDeclaration() {
     const element = document.getElementById('pdf-content');
     if (!element) return;
-
     element.style.display = 'block';
 
     const html2pdf = await import('html2pdf.js');

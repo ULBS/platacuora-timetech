@@ -4,7 +4,6 @@
     <img class="calendar-icon-right" src="https://img.icons8.com/glyph-neue/64/calendar.png " alt="calendar"/>
   </div>
 
-  <!-- Date Selection Form -->
   <div class="date-selection-form">
     <div class="form-row">
       <div class="form-group">
@@ -18,7 +17,7 @@
           [max]="maxDate"
           class="form-control"
         />
-        <button 
+        <button style="margin-right: 140px;"
           type="button" 
           (click)="openPdfPreview()" 
           class="btn-pdf"
@@ -87,11 +86,11 @@
           </td>
           <td class="odd-even-cell">
             <div class="custom-select odd-even-select">
-              <select [(ngModel)]="dateInfo.oddEven">
-                <option value="Par">Par</option>
-                <option value="Impar">Impar</option>
-              </select>
-            </div>
+            <select [(ngModel)]="dateInfo.isEven" class="form-control">
+            <option [value]="true">Par</option>
+            <option [value]="false">Impar</option>
+            </select>
+          </div>
           </td>
         </tr>
       </tbody>
@@ -139,36 +138,26 @@
           <td><input type="text" [(ngModel)]="week.weekNumber" class="form-control" /></td>
           <td><input type="date" [(ngModel)]="week.startDate" class="form-control" /></td>
           <td>
-            <select [(ngModel)]="week.weekType" class="form-control">
-              <option value="Par">Par</option>
-              <option value="Impar">Impar</option>
+            <select [(ngModel)]="week.weekType" 
+            (ngModelChange)="onWeekTypeChange(week)" 
+            class="form-control">
+            <option value="Par">Par</option>
+            <option value="Impar">Impar</option>
             </select>
           </td>
+          
         </tr>
+            <button (click)="saveEditedSemester()" class="btn-success">💾 Salvează Modificările</button>
+
       </tbody>
     </table>
-
-    <h4>Vacanțe / Perioade speciale</h4>
-    <table class="calendar-table">
-      <thead>
-        <tr>
-          <th>Nume</th>
-          <th>Început</th>
-          <th>Sfârșit</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let vac of loadedSemester.specialWeeks">
-          <td><input type="text" [(ngModel)]="vac.name" class="form-control" /></td>
-          <td><input type="date" [(ngModel)]="vac.startDate" class="form-control" /></td>
-          <td><input type="date" [(ngModel)]="vac.endDate" class="form-control" /></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <button (click)="saveEditedSemester()" class="btn-success">💾 Salvează Modificările</button>
   </div>
-</div>
+
+   
+      
+
+ 
+
 
 <!-- Semester Structure Configuration -->
 <div class="semester-structure-section">
@@ -262,120 +251,7 @@
   </form>
 </div>
 
-<!-- Hidden PDF Content -->
-<div id="pdf-content" [style]="{ display: 'none' }">
-  <body>
-    <div class="container">
-      <div class="clearfix">
-        <div class="header">
-          <div class="university-name">{{user?.universitate}}</div>
-          <div class="university-name">{{user?.facultate}}</div>
-          <div class="university-name">{{user?.departament}}</div>
-        </div>
-        <div class="approval-section">
-          <div><strong>Aprobat,</strong></div>
-          <div><strong>Decan</strong></div>
-          <div style="margin-top: 20px;"><strong>{{user?.decan}}</strong></div>
-        </div>
-      </div>
-      <h3 class="title" style="font-size: 20px;">DECLARAȚIE</h3>
-      <div class="content" style="font-size: 14px;">
-        Subsemnatul(a), <strong id="declarant">{{user.declarant}}</strong>,
-        <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span>
-        în {{user.departament}} activități didactice după cum urmează:
-      </div>
-      <table class="activities-table">
-        <thead>
-          <tr class="header-main">
-            <th rowspan="2">Post din săpt.</th>
-            <th rowspan="2">Data</th>
-            <th colspan="4">Numărul ore fizice</th>
-            <th rowspan="2">Tip</th>
-            <th rowspan="2">Coef.</th>
-            <th rowspan="2">Nr. Ore</th>
-            <th rowspan="2">Anul, grupa, semigrupa</th>
-          </tr>
-          <tr>
-            <th>C</th>
-            <th>S</th>
-            <th>L/A</th>
-            <th>P</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>19</td>
-            <td>02.04.2025</td>
-            <td>2</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>LR</td>
-            <td>1</td>
-            <td>2</td>
-            <td>C_I/1</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td colspan="2"><strong>TOTAL</strong></td>
-            <td><strong>6</strong></td>
-            <td><strong>14</strong></td>
-            <td><strong>17</strong></td>
-            <td><strong>2</strong></td>
-            <td>LR</td>
-            <td>1</td>
-            <td><strong>51.75</strong></td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-      <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <p><strong>Total ore față:</strong> 39</p>
-          <p><strong>Total ore calculate:</strong> 51.75</p>
-        </div>
-      </div>
-      <div style="margin-top: 20px;">
-        <strong>**Coeficienții sunt conform tabelului:</strong>
-      </div>
-      <table class="coefficients-table">
-        <thead>
-          <tr>
-            <th>Coeficienți</th>
-            <th>Curs</th>
-            <th>S/L/P/A</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>LR - Licența română</td>
-            <td>2</td>
-            <td>1</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="explanation-text">
-        Subsemnatul/Subsemnata, cunoscând prevederile art. 326 din Codul Penal cu privire la falsul în declarații, declar pe propria răspundere că în luna pentru care fac prezenta declarație de plată cu ora, în afara funcției/normei de bază, am desfășurat activități în regim de plată cu ora și/sau cu contract individual de muncă cu timp parțial și/sau activități în cadrul proiectelor respectând legislația muncii cu privire la numărul maxim de ore ce pot fi efectuate în cadrul activităților în afara funcției de bază/normei de bază, fără a depăși o medie de 4 ore/zi, respectiv o medie de 8 ore zilnic în anul universitar, cu respectarea duratei zilnice și săptămânale maxime legale a timpului de muncă și a perioadelor minime de repaus zilnic și săptămânal. De asemenea, declar că sunt de acord să pun la dispoziția instituțiilor abilitate, la solicitarea acestora, documentele doveditoare în scopul verificării și confirmării informațiilor furnizate prin această declarație.
-      </div>
-      <div class="certification-text">
-        Se certifică de noi ca orele declarate mai sus au fost efectuate de declarant întocmai.
-      </div>
-      <div class="signatures">
-        <div class="signature-section">
-          <div class="signature-title">DIRECTOR DEPARTAMENT</div>
-          <div class="signature-line"></div>
-          <div class="signature-name">{{user.directorDepartament}}</div>
-        </div>
-        <div class="signature-section">
-          <div class="signature-title">DECLARANT</div>
-          <div class="signature-line"></div>
-          <div class="signature-name">{{user.declarant}}</div>
-        </div>
-      </div>
-    </div>
-  </body>
-</div>
+
 
 <!-- Modal for PDF Preview -->
 <div class="pdf-modal" *ngIf="showPdfPreview">
@@ -402,14 +278,14 @@
           <span class="highlight">am suplinit în intervalul <span>{{startDate | date:'dd.MM.yyyy'}}</span> - <span>{{endDate | date:'dd.MM.yyyy'}}</span></span>
           în {{user.departament}} activități didactice după cum urmează:
         </div>
-        <table class="activities-table">
+        <table class="activities-table" id="activitiesTable">
           <thead>
             <tr class="header-main">
-              <th rowspan="2">Post din săpt.</th>
+              <th rowspan="2">Poz. din stat</th>
               <th rowspan="2">Data</th>
               <th colspan="4">Numărul ore fizice</th>
               <th rowspan="2">Tip</th>
-              <th rowspan="2">Coef.</th>
+              <th rowspan="2">Coef.**</th>
               <th rowspan="2">Nr. Ore</th>
               <th rowspan="2">Anul, grupa, semigrupa</th>
             </tr>
@@ -421,6 +297,7 @@
             </tr>
           </thead>
           <tbody>
+       
             <tr *ngFor="let row of editablePdfTable; let i = index">
               <td><input [(ngModel)]="row.post" class="pdf-table-input" /></td>
               <td><input [(ngModel)]="row.data" class="pdf-table-input" /></td>
@@ -432,11 +309,37 @@
               <td><input [(ngModel)]="row.coef" class="pdf-table-input" /></td>
               <td><input [(ngModel)]="row.nrOre" class="pdf-table-input" /></td>
               <td><input [(ngModel)]="row.grupa" class="pdf-table-input" /></td>
-              <td><button (click)="removePdfTableRow(i)">🗑️</button></td>
+              <td><button (click)="removePdfTableRow(i)" class="remove-btn">🗑️</button></td>
             </tr>
           </tbody>
+            <tfoot>
+            <tr class="footer-main" >
+              <td></td>
+              <td>TOTAL</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td ></td>
+              
+            </tr>
+            <tr  >
+              <td colspan="2" style="border: none;"></td>
+              <td colspan="4"  style="border: 2px solid #000; background-color:#f5f5f5;"></td>
+              <td colspan="4" style="border: none;"></td>
+            </tr>
+            </tfoot>
         </table>
-        <button (click)="addPdfTableRow()">Adaugă rând</button>
+        <button (click)="addPdfTableRow()" class="add-row-btn">Adaugă rând</button>
+         <div class="explanation-text">
+        Subsemnatul/Subsemnata, cunoscând prevederile art. 326 din Codul Penal cu privire la falsul în declarații, declar pe propria răspundere că în luna pentru care fac prezenta declarație de plată cu ora, în afara funcției/normei de bază, am desfășurat activități în regim de plată cu ora și/sau cu contract individual de muncă cu timp parțial și/sau activități în cadrul proiectelor respectând legislația muncii cu privire la numărul maxim de ore ce pot fi efectuate în cadrul activităților în afara funcției de bază/normei de bază, fără a depăși o medie de 4 ore/zi, respectiv o medie de 8 ore zilnic în anul universitar, cu respectarea duratei zilnice și săptămânale maxime legale a timpului de muncă și a perioadelor minime de repaus zilnic și săptămânal. De asemenea, declar că sunt de acord să pun la dispoziția instituțiilor abilitate, la solicitarea acestora, documentele doveditoare în scopul verificării și confirmării informațiilor furnizate prin această declarație.
+      </div>
+      <div class="certification-text">
+        Se certifică de noi ca orele declarate mai sus au fost efectuate de declarant întocmai.
+      </div>
         <div class="signatures">
           <div class="signature-section">
             <div class="signature-title">DIRECTOR DEPARTAMENT</div>
@@ -517,7 +420,6 @@
     transform: translateY(-50%);
   }
 
-  /* Additional styles for the semester structure section */
   .semester-structure-section {
     margin-top: 30px;
     padding: 20px;
