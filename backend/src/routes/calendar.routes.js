@@ -1,6 +1,7 @@
 const express = require('express');
 const calendarCtrl = require('../controllers/calendarController');
 const { authMiddleware, authorizeRoles } = require('../middleware/auth.middleware');
+const authorizeCalendarOwnerOrAdmin = require('../middleware/authorizeCalendarOwnerOrAdmin');
 
 const router = express.Router();
 
@@ -201,7 +202,7 @@ router.get(
  * @swagger
  * /api/calendar/{id}:
  *   put:
- *     summary: Update calendar (admin only)
+ *     summary: Update calendar (admin or user)
  *     tags: [Calendars]
  *     security:
  *       - bearerAuth: []
@@ -250,13 +251,13 @@ router.get(
 
 /**
  * @route   PUT /api/calendar/:id
- * @desc    Update calendar (admin only)
- * @access  Private/Admin
+ * @desc    Update calendar (admin or user)
+ * @access  admin or user
  */
 router.put(
   '/:id',
   authMiddleware,
-  authorizeRoles('admin'),
+  authorizeCalendarOwnerOrAdmin,
   calendarCtrl.updateCalendar
 );
 
@@ -264,7 +265,7 @@ router.put(
  * @swagger
  * /api/calendar/{id}:
  *   delete:
- *     summary: Delete calendar (admin only)
+ *     summary: Delete calendar (admin or user)
  *     tags: [Calendars]
  *     security:
  *       - bearerAuth: []
@@ -288,13 +289,13 @@ router.put(
 
 /**
  * @route   DELETE /api/calendar/:id
- * @desc    Delete calendar (admin only)
- * @access  Private/Admin
+ * @desc    Delete calendar (admin or user)
+ * @access  admin or user
  */
 router.delete(
   '/:id',
   authMiddleware,
-  authorizeRoles('admin'),
+  authorizeCalendarOwnerOrAdmin,
   calendarCtrl.deleteCalendar
 );
 
@@ -358,7 +359,7 @@ router.post(
  * @swagger
  * /api/calendar/{id}/export:
  *   get:
- *     summary: Export calendar days to Excel (admin only)
+ *     summary: Export calendar days to Excel (admin or user)
  *     tags: [Calendars]
  *     security:
  *       - bearerAuth: []
@@ -393,7 +394,7 @@ router.post(
 router.get(
   '/:id/export',
   authMiddleware,
-  authorizeRoles('admin'),
+  authorizeCalendarOwnerOrAdmin,
   calendarCtrl.exportToExcel
 );
 
@@ -401,7 +402,7 @@ router.get(
  * @swagger
  * /api/calendar/{id}/special-days:
  *   post:
- *     summary: Add special days (admin only)
+ *     summary: Add special days (admin or user)
  *     tags: [Calendars]
  *     security:
  *       - bearerAuth: []
@@ -445,13 +446,13 @@ router.get(
 /**
  * @route   POST /api/calendar/:id/special-days
  * @desc    Add special days (exams, local holidays)
- * @access  Private/Admin
+ * @access  Private/admin or user
  * @_body = [{ date, holidayName }]
  */
 router.post(
   '/:id/special-days',
   authMiddleware,
-  authorizeRoles('admin'),
+  authorizeCalendarOwnerOrAdmin,
   calendarCtrl.addSpecialDays
 );
 
