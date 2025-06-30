@@ -52,7 +52,7 @@ throw new Error('Method not implemented.');
   semesterEnd: string = '';
   oddWeekStart: boolean = true;
   currentConfigId: string | undefined;
-  loadedSemester: any = null;
+  //loadedSemester: any = null;
   vacation = {
     name: '',
     startDate: '',
@@ -67,8 +67,10 @@ throw new Error('Method not implemented.');
     weekLabel: string;
     isVacation: boolean;
   }[] = [];
-
-  //loadedSemester: any = null;
+  
+  calendarStatus: 'VERIFICAT' | 'IN_EDITARE' = 'VERIFICAT';
+  semesterStructureStatus: 'VERIFICAT' | 'IN_EDITARE' = 'VERIFICAT';
+  loadedSemester: any = null;
 
   editablePdfTable: any[] = [];
   showPdfPreview: boolean = false;
@@ -187,6 +189,11 @@ throw new Error('Method not implemented.');
   async downloadPdfFromPreview() {
     const element = document.getElementById('pdf-content-preview');
     if (!element) return;
+    
+    if (this.calendarStatus !== 'VERIFICAT') {
+    alert('Calendarul trebuie verificat înainte de a genera PDF-ul!');
+    return;
+    }
 
     const removeButtons = element.querySelectorAll('button');
     const originalDisplay: string[] = [];
@@ -319,6 +326,29 @@ throw new Error('Method not implemented.');
 
     this.checkWorkingDays();
   }
+
+  onWorkingDayChange(dateInfo: DateInfo, value: boolean) {
+      dateInfo.isWorkingDay = value;
+      this.calendarStatus = 'IN_EDITARE';
+  }
+
+  onWeekTypeChange(week: any): void {
+  console.log('Tipul săptămânii modificat:', week);
+  this.semesterStructureStatus = 'IN_EDITARE'; 
+  if (this.datesList.length > 0 && this.loadedSemester) {
+    this.refreshGeneratedDatesWithNewConfig();
+   }
+  }
+
+  onWeekDateChange(week: any): void {
+  console.log('Data săptămânii modificată:', week);
+  this.semesterStructureStatus = 'IN_EDITARE';
+  if (this.datesList.length > 0 && this.loadedSemester) {
+    this.refreshGeneratedDatesWithNewConfig();
+   }
+  }
+
+
 
   private getWeekTypeForDate(date: Date, semesterConfig: any): { weekType: 'Par' | 'Impar', weekNumber: string } {
     const weeks = semesterConfig.weeks || [];
@@ -486,6 +516,7 @@ throw new Error('Method not implemented.');
   if (!this.loadedSemester || !this.loadedSemester._id) {
     alert('Calendarul nu este încărcat!');
     return;
+    
   }
 
   const updateData = {
@@ -548,28 +579,33 @@ private refreshGeneratedDatesWithNewConfig(): void {
     const weekInfo = this.getWeekTypeForDate(currentDate, this.loadedSemester);
     dateInfo.isEven = weekInfo.weekType === 'Par';
   });
+  // Setează statusul ca IN_EDITARE la orice modificare
+  this.semesterStructureStatus = 'IN_EDITARE';
 
   console.log('Calendar actualizat cu succes!');
 }
 
-  regenerateDatesWithUpdatedConfig(): void {
+regenerateDatesWithUpdatedConfig(): void {
     if (!this.startDate || !this.endDate) {
       alert('Selectează mai întâi intervalul de date și generează calendarul!');
       return;
     }
 
-    // Regenerăm datele cu configurația actualizată
-    this.generateDates();
+   // Regenerăm datele cu configurația actualizată
+  this.generateDates();
+
+  // Setează statusul ca IN_EDITARE la orice modificare
+  this.semesterStructureStatus = 'IN_EDITARE';
   }
 
-  onWeekTypeChange(week: any): void {
-  console.log('Tipul săptămânii modificat:', week);
+verifySemesterStructure(){
   
-  if (this.datesList.length > 0 && this.loadedSemester) {
-    this.refreshGeneratedDatesWithNewConfig();
-  }
+  this.semesterStructureStatus = 'VERIFICAT'
 }
   
+verifyCalendar() {
+  this.calendarStatus = 'VERIFICAT';
+}
 
   generateCalendarGrid(semesterData: any) {
     const start = new Date(semesterData.startDate);
@@ -663,6 +699,10 @@ private refreshGeneratedDatesWithNewConfig(): void {
     const element = document.getElementById('pdf-content');
     if (!element) return;
     element.style.display = 'block';
+    if (this.calendarStatus !== 'VERIFICAT') {
+    alert('Calendarul trebuie verificat înainte de a genera PDF-ul!');
+    return;
+    }
 
     const html2pdf = await import('html2pdf.js');
     const opt = {

@@ -183,6 +183,56 @@ body {
   cursor: not-allowed;
   transform: none;
 }
+.verify-section {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  
+}
+
+.btn-verify {
+  background-color: #ffc107;
+  color: #222;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+}
+
+.btn-verify:disabled {
+  background-color: #e0e0e0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.btn-verify:hover:not(:disabled) {
+  background-color: #ffb300;
+  color: #111;
+  box-shadow: 0 4px 12px rgba(255,193,7,0.18);
+}
+
+.calendar-status-badge {
+  padding: 6px 16px;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 15px;
+  letter-spacing: 1px;
+  display: inline-block;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
 
 .loading-indicator {
   text-align: center;
