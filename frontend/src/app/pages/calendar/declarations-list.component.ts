@@ -190,10 +190,24 @@ export class DeclarationsListComponent implements OnInit {
         this.isGeneratingPDF = true;
         
         try {
-          const pdfBlob = await this.enhancedPdfService.generateEnhancedPDF(
-            decl.id.toString(), 
+          // Get the current declaration data from localStorage to ensure we have latest data
+          const userObj = JSON.parse(localStorage.getItem('user') || '{}'); 
+          const userId = userObj.id || userObj._id;
+          const currentDecl = this.getDeclarationsForUser(userId)
+            .find(d => d.id === decl.id) || decl;
+          
+          console.log('Generating enhanced PDF for declaration:', {
+            id: currentDecl.id,
+            activitatiCount: currentDecl.activitati?.length || 0,
+            hasData: currentDecl.activitati?.some(a => a.c || a.s || a.la || a.p) || false
+          });
+          
+          const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
+            currentDecl.id.toString(), 
             result.options
-          ).toPromise();
+          );
+          
+          const pdfBlob = await pdfObservable.toPromise();
 
           if (pdfBlob) {
             // Save PDF to declaration
@@ -269,10 +283,12 @@ export class DeclarationsListComponent implements OnInit {
     this.isGeneratingPDF = true;
     
     try {
-      const pdfBlob = await this.enhancedPdfService.generateEnhancedPDF(
+      const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
         decl.id.toString(), 
         { ...options, enhanced: true }
-      ).toPromise();
+      );
+      
+      const pdfBlob = await pdfObservable.toPromise();
 
       if (pdfBlob) {
         const filename = `PO-Enhanced-${decl.perioada.start}-${decl.perioada.end}-${decl.id}.pdf`;

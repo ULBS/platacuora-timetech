@@ -45,7 +45,7 @@
             background: linear-gradient(145deg, #ffffff, #f8f9ff);
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            padding: 24px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -53,6 +53,8 @@
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1px solid rgba(255, 255, 255, 0.5);
             overflow: hidden;
+            min-height: 360px;
+            margin-top: 20px; /* Add margin to prevent checkbox overlap */
         }
 
         .declaration-card::before {
@@ -156,26 +158,37 @@
 
         .declaration-actions {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            gap: 8px;
             justify-content: center;
             margin-top: auto;
             width: 100%;
         }
 
+        .enhanced-actions,
+        .standard-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         .declaration-actions button {
             flex: 1;
+            min-width: 90px;
             background: linear-gradient(135deg, #225091 0%, #431373 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            padding: 10px 16px;
-            font-size: 0.9rem;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
             position: relative;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
         }
 
         .declaration-actions button:hover {
@@ -326,8 +339,13 @@
         /* Selection Checkbox Styling */
         .selection-checkbox {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 8px;
+            right: 8px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .selection-checkbox input[type="checkbox"] {
@@ -335,6 +353,7 @@
             height: 18px;
             cursor: pointer;
             accent-color: #225091;
+            margin: 0;
         }
 
         .declaration-card.selected {
@@ -435,17 +454,27 @@
             }
 
             .declaration-card {
-                padding: 20px;
+                padding: 16px;
+                min-height: 340px;
             }
 
             .declaration-actions {
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
+            }
+
+            .enhanced-actions,
+            .standard-actions {
+                flex-direction: column;
+                gap: 6px;
             }
 
             .declaration-actions button {
                 flex: none;
                 width: 100%;
+                min-width: auto;
+                font-size: 0.75rem;
+                padding: 6px 10px;
             }
         }
 

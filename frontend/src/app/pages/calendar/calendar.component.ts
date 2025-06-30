@@ -6,6 +6,9 @@ import { CalendarService, HolidayResponse } from '../../../core/services/calenda
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SemesterService } from '../../core/services/semester.service';
+import { TeachingHour, TeachingHoursService } from '../../core/services/teaching-hours.service';
+import { EnhancedPdfService, PDFOptions } from '../../core/services/enhanced-pdf.service';
+import { PaymentDeclarationService } from '../../core/services/payment-declaration.service';
 
 interface DateInfo {
   date: string;
@@ -74,7 +77,10 @@ throw new Error('Method not implemented.');
   constructor(
     private http: HttpClient,
     private calendarService: CalendarService,
-    private semesterService: SemesterService
+    private semesterService: SemesterService,
+    private teachingHoursService: TeachingHoursService,
+    private enhancedPdfService: EnhancedPdfService,
+    private paymentDeclarationService: PaymentDeclarationService
   ) {}
 
   ngOnInit(): void {
@@ -150,19 +156,102 @@ throw new Error('Method not implemented.');
     alert('Nu există zile lucrătoare selectate pentru a genera declarația!');
     return;
   }
+
+  console.log('🔍 Calendar Preview - Loading teaching hours for period:', {
+    startDate: this.startDate,
+    endDate: this.endDate,
+    workingDaysCount: workingDays.length
+  });
   
-  this.editablePdfTable = workingDays.map(date => ({
-    post: '',
-    data: date.date,
-    c: '',
-    s: '',
-    la: '',
-    p: '',
-    tip: '',
-    coef: '',
-    nrOre: '',
-    grupa: ''
-  }));
+  // Load teaching hours from localStorage (saved by TeachingHoursService)
+  const teachingHoursData = JSON.parse(localStorage.getItem('teachingHours') || '[]') as TeachingHour[];
+  console.log('� Teaching hours from localStorage:', teachingHoursData);
+  
+  // Get current academic year and semester based on the selected period
+  const academicYear = this.getAcademicYearFromDate(this.startDate);
+  const semester = this.getSemesterFromDate(this.startDate);
+  
+  console.log('🎯 Filtering for academic year:', academicYear, 'semester:', semester);
+  
+  // Filter teaching hours for the current academic year and semester
+  const relevantTeachingHours = teachingHoursData.filter(hour => 
+    hour.academicYear === academicYear && hour.semester === semester
+  );
+  
+  console.log('📋 Relevant teaching hours:', relevantTeachingHours);
+  
+  // Create a map of day names to teaching hours
+  const dayNameMap: { [key: string]: string } = {
+    'Monday': 'Luni',
+    'Tuesday': 'Marti', 
+    'Wednesday': 'Miercuri',
+    'Thursday': 'Joi',
+    'Friday': 'Vineri',
+    'Saturday': 'Sambata',
+    'Sunday': 'Duminica'
+  };
+  
+  // Create the editable PDF table by matching working days with teaching hours
+  this.editablePdfTable = [];
+  
+  for (const date of workingDays) {
+    const dateObj = new Date(date.date.split('.').reverse().join('-')); // Convert from DD.MM.YYYY to YYYY-MM-DD
+    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const romanianDayName = dayNameMap[dayOfWeek];
+    
+    console.log(`🗓️ Processing date ${date.date} (${dayOfWeek} -> ${romanianDayName})`);
+    
+    // Find teaching hours for this day of the week
+    const hoursForThisDay = relevantTeachingHours.filter(hour => 
+      hour.dayOfWeek === romanianDayName
+    );
+    
+    if (hoursForThisDay.length > 0) {
+      // Create entries for each teaching hour on this day
+      for (const hour of hoursForThisDay) {
+        console.log(`✅ Adding teaching hour for ${date.date}:`, hour);
+        
+        this.editablePdfTable.push({
+          post: hour.disciplineName || '',
+          data: date.date,
+          c: (hour.courseHours || 0).toString(),
+          s: (hour.seminarHours || 0).toString(),
+          la: (hour.labHours || 0).toString(),
+          p: (hour.projectHours || 0).toString(),
+          tip: hour.activityType || 'LR',
+          coef: '1',
+          nrOre: (hour.totalHours || (hour.courseHours || 0) + (hour.seminarHours || 0) + (hour.labHours || 0) + (hour.projectHours || 0)).toString(),
+          grupa: hour.group || ''
+        });
+      }
+    } else {
+      // If no teaching hours for this day, create an empty row for manual entry
+      console.log(`➖ No teaching hours for ${date.date}, creating empty row`);
+      this.editablePdfTable.push({
+        post: '',
+        data: date.date,
+        c: '',
+        s: '',
+        la: '',
+        p: '',
+        tip: '',
+        coef: '1',
+        nrOre: '',
+        grupa: ''
+      });
+    }
+  }
+  
+  console.log('� Final PDF table:', this.editablePdfTable);
+  console.log(`✅ Created ${this.editablePdfTable.length} rows for PDF preview`);
+  
+  // Show summary of loaded data
+  const populatedRows = this.editablePdfTable.filter(row => row.c || row.s || row.la || row.p);
+  if (populatedRows.length > 0) {
+    console.log(`🎯 Pre-populated ${populatedRows.length} rows with teaching hours data`);
+  } else {
+    console.log('⚠️ No teaching hours found for this period - user will need to fill manually');
+  }
   
   this.showPdfPreview = true;
 }
@@ -183,63 +272,148 @@ throw new Error('Method not implemented.');
   }
 
   async downloadPdfFromPreview() {
-    const element = document.getElementById('pdf-content-preview');
-    if (!element) return;
-
-    const removeButtons = element.querySelectorAll('button');
-    const originalDisplay: string[] = [];
-    removeButtons.forEach((btn, idx) => {
-      originalDisplay[idx] = (btn as HTMLElement).style.display;
-      (btn as HTMLElement).style.display = 'none';
-    });
-
     try {
-      const html2pdf = await import('html2pdf.js');
-      const opt = {
-        margin: 10,
-        filename: 'declaratie-activitati-didactice.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      };
-      const worker = html2pdf.default().set(opt).from(element);
-      const pdfBlob = await worker.output('blob');
-      const pdfBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
-      });
-
+      console.log('🚀 Calendar PDF Generation - Starting...');
+      
+      // Validate that we have data to generate PDF
+      if (!this.editablePdfTable || this.editablePdfTable.length === 0) {
+        alert('Nu există date pentru a genera PDF-ul. Vă rugăm să adăugați cel puțin o intrare în tabel.');
+        return;
+      }
+      
+      // Get user information
       const userId = this.user?.id || this.user?._id;
       if (!userId) {
         alert('Nu există utilizator autentificat. Nu se poate salva declarația.');
         return;
       }
 
-      const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+      console.log('📋 Calendar PDF - User data:', this.user);
+      console.log('📊 Calendar PDF - Editable table data:', this.editablePdfTable);
+
+      // Filter out empty rows
+      const validRows = this.editablePdfTable.filter(row => 
+        row && (row.c || row.s || row.la || row.p || row.post)
+      );
+
+      if (validRows.length === 0) {
+        alert('Nu există date valide pentru a genera PDF-ul. Vă rugăm să completați cel puțin o linie cu ore.');
+        return;
+      }
+
+      console.log('✅ Calendar PDF - Valid rows for PDF:', validRows.length);
+
+      // Create declaration object matching the format expected by enhanced PDF service
       const newDeclaration = {
         id: Date.now(),
         userId: userId,
         perioada: { start: this.startDate, end: this.endDate },
-        activitati: this.editablePdfTable,
+        activitati: validRows,
         status: 'generata' as const,
-        dataCreare: new Date().toISOString(),
-        pdfBase64: pdfBase64
+        dataCreare: new Date().toISOString()
       };
 
+      console.log('📋 Calendar PDF - New declaration created:', newDeclaration);
+
+      // Save to localStorage first (for the service to find it)
+      const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
       declarations.push(newDeclaration);
       localStorage.setItem('declarations', JSON.stringify(declarations));
 
-      await worker.save();
-      alert('Declarația a fost salvată în istoric!');
-    } catch (error) {
-      console.error('Eroare la generarea PDF:', error);
-      alert('Eroare la generarea PDF-ului.');
-    } finally {
-      removeButtons.forEach((btn, idx) => {
-        (btn as HTMLElement).style.display = originalDisplay[idx] || '';
+      console.log('💾 Calendar PDF - Declaration saved to localStorage');
+
+      // Also save the hours data in the format expected by the enhanced PDF service
+      localStorage.setItem('savedHours', JSON.stringify(validRows));
+
+      // Save declaration to database
+      try {
+        console.log('🗄️ Calendar PDF - Saving declaration to database...');
+        
+        const declarationData = {
+          title: `Declarație generată din calendar - ${this.startDate} / ${this.endDate}`,
+          faculty: this.user.faculty || 'Inginerie',
+          department: this.user.department || 'Calculatoare și Inginerie Electrică',
+          academicYear: this.paymentDeclarationService.getAcademicYearFromDate(new Date(this.startDate)),
+          semester: this.paymentDeclarationService.getSemesterFromDate(new Date(this.startDate)),
+          startDate: this.startDate,
+          endDate: this.endDate,
+          items: this.paymentDeclarationService.transformTableDataToItems(validRows),
+          comments: 'Declarație generată automat din calendar'
+        };
+
+        this.paymentDeclarationService.createDeclaration(declarationData).subscribe({
+          next: (savedDeclaration) => {
+            console.log('✅ Calendar PDF - Declaration saved to database:', savedDeclaration);
+            
+            // Update localStorage with the database ID
+            const updatedDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+            const declarationIndex = updatedDeclarations.findIndex((d: any) => d.id === newDeclaration.id);
+            if (declarationIndex >= 0) {
+              updatedDeclarations[declarationIndex].databaseId = savedDeclaration._id;
+              localStorage.setItem('declarations', JSON.stringify(updatedDeclarations));
+            }
+          },
+          error: (error) => {
+            console.error('❌ Calendar PDF - Error saving to database:', error);
+            // Continue with PDF generation even if database save fails
+          }
+        });
+      } catch (dbError) {
+        console.error('❌ Calendar PDF - Database save error:', dbError);
+        // Continue with PDF generation even if database save fails
+      }
+      
+      console.log('🚀 Calendar PDF - Calling enhanced PDF service...');
+
+      // Generate PDF using enhanced PDF service
+      const pdfOptions: PDFOptions = {
+        enhanced: true,
+        includeQR: true,
+        includeWatermark: false,
+        digitalSignature: false,
+        template: 'ulbs-official'
+      };
+
+      // Call the enhanced PDF service
+      const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
+        newDeclaration.id.toString(),
+        pdfOptions
+      );
+
+      pdfObservable.subscribe({
+        next: (pdfBlob: Blob) => {
+          console.log('✅ Calendar PDF - PDF generated successfully');
+          
+          // Convert to base64 and update the declaration
+          this.enhancedPdfService.blobToBase64(pdfBlob).then(base64 => {
+            // Update the declaration with the PDF base64
+            const updatedDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+            const declarationIndex = updatedDeclarations.findIndex((d: any) => d.id === newDeclaration.id);
+            if (declarationIndex >= 0) {
+              updatedDeclarations[declarationIndex].pdfBase64 = base64;
+              localStorage.setItem('declarations', JSON.stringify(updatedDeclarations));
+            }
+            
+            console.log('💾 Calendar PDF - Declaration updated with PDF base64');
+          });
+          
+          // Open PDF in new window
+          this.enhancedPdfService.openBlobInNewWindow(pdfBlob);
+          
+          console.log('✅ Declaration PDF generated successfully and saved to history!');
+          
+          // Close the preview modal
+          this.closePdfPreview();
+        },
+        error: (error) => {
+          console.error('❌ Calendar PDF - Error generating PDF:', error);
+          alert('Eroare la generarea PDF-ului: ' + (error.message || error));
+        }
       });
+
+    } catch (error) {
+      console.error('❌ Calendar PDF - Unexpected error:', error);
+      alert('Eroare neașteptată la generarea PDF-ului.');
     }
   }
 
@@ -282,8 +456,10 @@ throw new Error('Method not implemented.');
   private generateDatesWithWeekInfo(startDate: Date, endDate: Date, semesterConfig: any): void {
     const currentDate = new Date(startDate);
     
-    console.log('Configurația semestrului încărcată:', semesterConfig);
-    console.log('Săptămânile disponibile:', semesterConfig.weeks);
+    // Log semester config only once for debugging
+    if (semesterConfig && semesterConfig.weeks) {
+      console.log('Semester config loaded with', semesterConfig.weeks.length, 'weeks');
+    }
     
     while (currentDate <= endDate) {
       const weekInfo = this.getWeekTypeForDate(currentDate, semesterConfig);
@@ -326,10 +502,10 @@ throw new Error('Method not implemented.');
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 6); 
       
-      console.log(`Verificăm data ${date.toDateString()} cu săptămâna ${week.weekNumber} (${week.weekType}): ${weekStart.toDateString()} - ${weekEnd.toDateString()}`);
+      // Removed excessive debug logging for performance
       
       if (date >= weekStart && date <= weekEnd) {
-        console.log(`Găsită! Data ${date.toDateString()} aparține săptămânii ${week.weekNumber} (${week.weekType})`);
+        // Found matching week
         return {
           weekType: week.weekType,
           weekNumber: week.weekNumber
@@ -362,7 +538,7 @@ throw new Error('Method not implemented.');
         weekType = (weeksDiff % 2 === 0) ? 'Impar' : 'Par';
       }
       
-      console.log(`Calculat pentru data ${date.toDateString()}: ${weekType} (bazat pe săptămâna ${closestWeek.weekNumber})`);
+      // Calculated week type based on closest week
       
       return {
         weekType: weekType,
@@ -370,7 +546,7 @@ throw new Error('Method not implemented.');
       };
     }
     
-    console.log(`Fallback pentru data ${date.toDateString()}: Impar`);
+    // Fallback to default
     return { weekType: 'Impar', weekNumber: '1' };
   }
 
@@ -644,6 +820,33 @@ private refreshGeneratedDatesWithNewConfig(): void {
   console.log('Refresh manual cu configurația curentă...');
   this.generateDates();
 }
+
+  // Helper methods for PDF generation
+  private getAcademicYearFromDate(dateString: string): string {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1; // JavaScript months are 0-based
+    
+    if (month >= 10) {
+      // October to December - start of academic year
+      return `${date.getFullYear()}/${date.getFullYear() + 1}`;
+    } else {
+      // January to September - end of academic year
+      return `${date.getFullYear() - 1}/${date.getFullYear()}`;
+    }
+  }
+
+  private getSemesterFromDate(dateString: string): number {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1; // JavaScript months are 0-based
+    
+    if (month >= 10 || month <= 1) {
+      // October, November, December, January - Semester 1
+      return 1;
+    } else {
+      // February to September - Semester 2
+      return 2;
+    }
+  }
 
   addVacation() {
     if (!this.currentConfigId) {

@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PDFOptions, TemplateInfo, CertificateInfo, EnhancedPdfService } from '../../core/services/enhanced-pdf.service';
@@ -185,6 +185,9 @@ export interface PDFDialogData {
   styleUrls: ['./pdf-options-dialog.component.scss']
 })
 export class PdfOptionsDialogComponent implements OnInit {
+  @Input() data!: PDFDialogData;
+  @Input() dialogRef!: any;
+
   options: PDFOptions = {
     enhanced: true,
     includeQR: true,
@@ -200,9 +203,7 @@ export class PdfOptionsDialogComponent implements OnInit {
   isGenerating = false;
 
   constructor(
-    private enhancedPdfService: EnhancedPdfService,
-    @Inject('data') public data: PDFDialogData,
-    @Inject('dialogRef') private dialogRef: any
+    private enhancedPdfService: EnhancedPdfService
   ) {}
 
   ngOnInit() {

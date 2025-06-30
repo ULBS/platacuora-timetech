@@ -14,14 +14,20 @@ import { Router } from '@angular/router';
 export class AuthInterceptor implements HttpInterceptor {
 
   constructor(private router: Router) {}  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Get the current user from localStorage
-    const currentUserString = localStorage.getItem('currentUser');
-    let token = null;
+    // Get the token from different possible locations
+    let token = localStorage.getItem('auth_token') || localStorage.getItem('token');
     
-    if (currentUserString) {
-      // Parse the stored user and get the token
-      const currentUser = JSON.parse(currentUserString);
-      token = currentUser.token;
+    // Fallback: try to get token from currentUser object
+    if (!token) {
+      const currentUserString = localStorage.getItem('currentUser');
+      if (currentUserString) {
+        try {
+          const currentUser = JSON.parse(currentUserString);
+          token = currentUser.token;
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
     }
     
     // Clone the request and add the token if it exists

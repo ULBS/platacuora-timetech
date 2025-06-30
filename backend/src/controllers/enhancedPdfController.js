@@ -15,25 +15,54 @@ class EnhancedPDFController {
       const { id } = req.params;
       const options = req.body || {};
 
-      // For now, create a mock declaration since data is stored in localStorage
-      // In a real implementation, this would query the database
-      const mockDecl = {
-        _id: id,
-        user: {
-          _id: req.user.id,
-          firstName: req.user.firstName || 'Test',
-          lastName: req.user.lastName || 'User',
-          email: req.user.email || 'test@ulbsibiu.ro'
-        },
-        periode: {
-          start: new Date().getFullYear() + '-10-01',
-          end: new Date().getFullYear() + '-10-31'
-        },
-        academicYear: '2024/2025',
-        semester: 1,
-        activitati: [],
-        status: 'generata'
-      };
+      console.log('🚀 Enhanced PDF generation request:', {
+        id,
+        hasDeclarationData: !!options.declarationData,
+        optionsKeys: Object.keys(options)
+      });
+
+      // Check if declaration data is provided in the request body
+      let declarationData = options.declarationData;
+      
+      if (!declarationData) {
+        console.log('❌ No declaration data provided, using mock data');
+        // If no declaration data provided, create a fallback mock
+        declarationData = {
+          _id: id,
+          user: {
+            _id: req.user?.id || 'unknown',
+            firstName: req.user?.firstName || 'Test',
+            lastName: req.user?.lastName || 'User',
+            email: req.user?.email || 'test@ulbsibiu.ro'
+          },
+          periode: {
+            start: '2025-04-01',
+            end: '2025-04-30'
+          },
+          academicYear: '2024/2025',
+          semester: 2,
+          faculty: 'Inginerie',
+          department: 'Calculatoare și Inginerie Electrică',
+          activitati: [],
+          status: 'generata',
+          items: []
+        };
+      } else {
+        console.log('✅ Declaration data provided from frontend:', {
+          userId: declarationData.user?._id,
+          userName: `${declarationData.user?.firstName} ${declarationData.user?.lastName}`,
+          itemsCount: declarationData.items?.length || 0,
+          academicYear: declarationData.academicYear,
+          semester: declarationData.semester,
+          periode: declarationData.periode
+        });
+        console.log('📋 Items received from frontend:', declarationData.items);
+      }
+
+      // Ensure items array exists
+      if (!declarationData.items) {
+        declarationData.items = [];
+      }
 
       // Authorization is already handled by middleware
       // Since this is localStorage data, user already owns it
@@ -61,10 +90,10 @@ class EnhancedPDFController {
         };
       }
 
-      const pdfBuffer = await PDFService.buildDeclarationPDF(mockDecl, pdfOptions);
+      const pdfBuffer = await PDFService.buildDeclarationPDF(declarationData, pdfOptions);
 
       // Set response headers
-      const filename = `PO-${mockDecl.academicYear}-S${mockDecl.semester}-${mockDecl.user.lastName}-${id}.pdf`;
+      const filename = `PO-${declarationData.academicYear}-S${declarationData.semester}-${declarationData.user.lastName}-${id}.pdf`;
       
       res.status(200).set({
         'Content-Type': 'application/pdf',
@@ -100,15 +129,40 @@ class EnhancedPDFController {
         return res.status(400).json({ message: 'Lista de declarații este obligatorie' });
       }
 
-      // Fetch declarations
-      const declarations = await PaymentDeclaration.find({
-        _id: { $in: declarationIds }
-      })
-      .populate('user', 'firstName lastName email position faculty department')
-      .populate('semester', 'name academicYear');
+      // Since we're working with localStorage data, create mock declarations for each ID
+      const mockDeclarations = declarationIds.map(id => ({
+        _id: id,
+        user: {
+          _id: req.user.id,
+          firstName: req.user.firstName || 'Test',
+          lastName: req.user.lastName || 'User',
+          email: req.user.email || 'test@ulbsibiu.ro'
+        },
+        periode: {
+          start: new Date().getFullYear() + '-10-01',
+          end: new Date().getFullYear() + '-10-31'
+        },
+        academicYear: '2024/2025',
+        semester: 1,
+        activitati: [],
+        status: 'generata',
+        items: [
+          {
+            date: new Date(),
+            disciplineName: 'Disciplină Test',
+            activityType: 'LR',
+            groups: 'Grupa 1',
+            courseHours: 2,
+            seminarHours: 1,
+            labHours: 2,
+            projectHours: 0,
+            totalHours: 5
+          }
+        ]
+      }));
 
-      // Authorization check - user can only access their own declarations unless admin
-      const authorizedDeclarations = declarations.filter(decl => {
+      // Authorization check - for localStorage data, user already owns all declarations
+      const authorizedDeclarations = mockDeclarations.filter(decl => {
         const isOwner = decl.user._id.toString() === req.user.id;
         const isAdmin = req.user.role === 'admin';
         return isOwner || isAdmin;
@@ -139,7 +193,29 @@ class EnhancedPDFController {
         };
       }
 
-      const results = await PDFService.generateBatchPDFs(authorizedDeclarations, batchOptions);
+      // Generate PDFs for each declaration
+      const results = [];
+      
+      for (const declaration of authorizedDeclarations) {
+        try {
+          const pdfBuffer = await PDFService.buildDeclarationPDF(declaration, batchOptions);
+          results.push({
+            id: declaration._id,
+            success: true,
+            buffer: pdfBuffer,
+            size: pdfBuffer.length,
+            signed: batchOptions.digitalSignature
+          });
+        } catch (error) {
+          console.error(`Error generating PDF for declaration ${declaration._id}:`, error);
+          results.push({
+            id: declaration._id,
+            success: false,
+            error: error.message,
+            signed: false
+          });
+        }
+      }
 
       // Prepare response
       const successful = results.filter(r => r.success);
@@ -162,7 +238,7 @@ class EnhancedPDFController {
         })),
         downloadLinks: successful.map(r => ({
           id: r.id,
-          url: `/api/pdf/download/${r.id}`,
+          url: `/api/enhanced-pdf/generate/${r.id}`,
           signed: r.signed || false
         }))
       });

@@ -45,7 +45,12 @@ export class TeachingHoursService {
       ...this.getAuthOptions(),
       params
     }).pipe(
-      tap(response => this.hoursSubject.next(response.records)),
+      tap(response => {
+        this.hoursSubject.next(response.records);
+        // Save to localStorage for PDF generation
+        localStorage.setItem('teachingHours', JSON.stringify(response.records));
+        console.log('Teaching hours saved to localStorage:', response.records.length, 'records');
+      }),
       catchError(error => {
         console.error('Eroare la încărcarea orelor:', error);
         return throwError(() => error);

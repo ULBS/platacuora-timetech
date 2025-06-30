@@ -21,19 +21,155 @@ exports.buildDeclarationPDF = async function(decl, options = {}) {
   try {
     // If enhanced mode is requested, use the new service
     if (options.enhanced !== false) {
-      // Integrate data from TeachingHours and Calendar
-      const integratedData = await DataIntegrationService.integrateDeclarationData(
-        decl._id,
-        decl.user._id,
-        decl.startDate,
-        decl.endDate
-      );
+      
+      console.log('🔍 PDF Service - Input declaration data:', {
+        id: decl._id,
+        hasItems: !!(decl.items && decl.items.length > 0),
+        itemsCount: decl.items ? decl.items.length : 0,
+        hasActivitati: !!(decl.activitati && decl.activitati.length > 0),
+        activitatiCount: decl.activitati ? decl.activitati.length : 0
+      });
+
+      let integratedData;
+      let items = [];
+
+      // Check if frontend provided items data
+      if (decl.items && decl.items.length > 0) {
+        console.log('✅ PDF Service - Using items provided by frontend');
+        items = decl.items;
+        integratedData = {
+          items: items,
+          summary: {
+            totalHours: items.reduce((sum, item) => sum + (parseInt(item.totalHours) || 0), 0),
+            courseHours: items.reduce((sum, item) => sum + (parseInt(item.courseHours) || 0), 0),
+            seminarHours: items.reduce((sum, item) => sum + (parseInt(item.seminarHours) || 0), 0),
+            labHours: items.reduce((sum, item) => sum + (parseInt(item.labHours) || 0), 0),
+            projectHours: items.reduce((sum, item) => sum + (parseInt(item.projectHours) || 0), 0)
+          },
+          metadata: {
+            dataSource: 'frontend',
+            generatedAt: new Date().toISOString()
+          }
+        };
+      }
+      // Check if frontend provided activitati data and transform it
+      else if (decl.activitati && decl.activitati.length > 0) {
+        console.log('✅ PDF Service - Converting activitati to items format');
+        console.log('📋 PDF Service - Raw activitati data:', decl.activitati.slice(0, 3));
+        
+        items = decl.activitati.map((activitate, index) => {
+          const courseHours = parseInt(activitate.c || activitate.courseHours || '0') || 0;
+          const seminarHours = parseInt(activitate.s || activitate.seminarHours || '0') || 0;
+          const labHours = parseInt(activitate.la || activitate.labHours || '0') || 0;
+          const projectHours = parseInt(activitate.p || activitate.projectHours || '0') || 0;
+          let totalHours = parseInt(activitate.nrOre || activitate.totalHours || '0') || 0;
+          
+          // Calculate total hours if not provided
+          if (totalHours === 0) {
+            totalHours = courseHours + seminarHours + labHours + projectHours;
+          }
+          
+          const item = {
+            date: activitate.data || activitate.date || new Date().toISOString().split('T')[0],
+            disciplineName: activitate.post || activitate.disciplina || activitate.disciplineName || `Activitate ${index + 1}`,
+            activityType: activitate.tip || activitate.activityType || 'LR',
+            groups: activitate.grupa || activitate.groups || activitate.grupe || 'Grupa 1',
+            courseHours: courseHours,
+            seminarHours: seminarHours,
+            labHours: labHours,
+            projectHours: projectHours,
+            totalHours: totalHours,
+            coefficient: parseFloat(activitate.coef || activitate.coefficient || '1') || 1
+          };
+          
+          console.log(`📊 PDF Service - Transformed item ${index + 1}:`, {
+            date: item.date,
+            hours: `C:${item.courseHours} S:${item.seminarHours} L:${item.labHours} P:${item.projectHours}`,
+            total: item.totalHours,
+            discipline: item.disciplineName
+          });
+          
+          return item;
+        }).filter(item => {
+          // More lenient filter - include items with any hours or meaningful content
+          const hasHours = item.courseHours > 0 || item.seminarHours > 0 || item.labHours > 0 || item.projectHours > 0;
+          const hasContent = item.disciplineName && item.disciplineName.trim() !== '' && item.disciplineName !== 'Disciplină';
+          const hasDate = item.date && item.date !== '';
+          
+          const shouldInclude = hasHours || hasContent || hasDate;
+          
+          if (!shouldInclude) {
+            console.log('🗑️ PDF Service - Filtering out empty item:', item);
+          }
+          
+          return shouldInclude;
+        });
+
+        // Calculate total hours if not provided
+        items.forEach(item => {
+          if (!item.totalHours || item.totalHours === 0) {
+            item.totalHours = item.courseHours + item.seminarHours + item.labHours + item.projectHours;
+          }
+        });
+
+        console.log(`🔄 PDF Service - Converted ${decl.activitati.length} activitati to ${items.length} items`);
+        
+        // If after filtering we have no items, create a sample entry to avoid empty PDF
+        if (items.length === 0) {
+          console.log('⚠️ PDF Service - No valid items after filtering, creating sample entry');
+          items = [{
+            date: decl.periode?.start || new Date().toISOString().split('T')[0],
+            disciplineName: 'Activitate didactică',
+            activityType: 'LR',
+            groups: 'Grupa 1',
+            courseHours: 2,
+            seminarHours: 0,
+            labHours: 0,
+            projectHours: 0,
+            totalHours: 2,
+            coefficient: 1
+          }];
+        }
+        
+        integratedData = {
+          items: items,
+          summary: {
+            totalHours: items.reduce((sum, item) => sum + (parseInt(item.totalHours) || 0), 0),
+            courseHours: items.reduce((sum, item) => sum + (parseInt(item.courseHours) || 0), 0),
+            seminarHours: items.reduce((sum, item) => sum + (parseInt(item.seminarHours) || 0), 0),
+            labHours: items.reduce((sum, item) => sum + (parseInt(item.labHours) || 0), 0),
+            projectHours: items.reduce((sum, item) => sum + (parseInt(item.projectHours) || 0), 0)
+          },
+          metadata: {
+            dataSource: 'frontend_activitati',
+            generatedAt: new Date().toISOString()
+          }
+        };
+      }
+      // Fallback to database integration
+      else {
+        console.log('⚠️ PDF Service - No items provided, fetching from database');
+        // Integrate data from TeachingHours and Calendar
+        integratedData = await DataIntegrationService.integrateDeclarationData(
+          decl._id,
+          decl.user._id,
+          decl.startDate || decl.periode?.start,
+          decl.endDate || decl.periode?.end
+        );
+      }
 
       // Validate integrated data
       const validation = DataIntegrationService.validateIntegratedData(integratedData);
       if (!validation.isValid) {
+        console.error('❌ PDF Service - Data validation failed:', validation.errors);
         throw new Error(`Data validation failed: ${validation.errors.join(', ')}`);
       }
+
+      console.log('✅ PDF Service - Final integrated data:', {
+        itemsCount: integratedData.items.length,
+        totalHours: integratedData.summary.totalHours,
+        dataSource: integratedData.metadata.dataSource
+      });
 
       // Merge integrated data with declaration
       const enhancedDeclaration = {
