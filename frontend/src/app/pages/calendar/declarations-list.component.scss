@@ -1,4 +1,4 @@
- * {
+* {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -164,7 +164,7 @@
 
         .declaration-actions button {
             flex: 1;
-            background: linear-gradient(135deg,  #225091 0%,  #431373 100%);
+            background: linear-gradient(135deg, #225091 0%, #431373 100%);
             color: white;
             border: none;
             border-radius: 10px;
@@ -172,32 +172,249 @@
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-           
             box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
             position: relative;
             overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-     
+        .declaration-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
 
-      
+        .declaration-actions button:active {
+            transform: translateY(0);
+        }
 
-        .no-declarations {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-            font-size: 1.2rem;
-            background: linear-gradient(135deg, #f8f9ff, #e8eaff);
+        .declaration-actions button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .declaration-actions button:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Button variants */
+        .declaration-actions button.btn-secondary,
+        .batch-actions button.btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            box-shadow: 0 4px 16px rgba(108, 117, 125, 0.3);
+        }
+
+        .declaration-actions button.btn-secondary:hover,
+        .batch-actions button.btn-secondary:hover {
+            box-shadow: 0 8px 24px rgba(108, 117, 125, 0.4);
+        }
+
+        .declaration-actions button.btn-outline {
+            background: transparent;
+            border: 2px solid #225091;
+            color: #225091;
+            box-shadow: none;
+        }
+
+        .declaration-actions button.btn-outline:hover {
+            background: #225091;
+            color: white;
+            box-shadow: 0 4px 16px rgba(34, 80, 145, 0.3);
+        }
+
+        .declaration-actions button.btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
+        }
+
+        .declaration-actions button.btn-danger:hover {
+            box-shadow: 0 8px 24px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Batch Actions Styling */
+        .batch-actions {
+            background: linear-gradient(145deg, #ffffff, #f8f9ff);
             border-radius: 16px;
-            border: 2px dashed #dee2e6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
-        .no-declarations::before {
-            content: '📄';
-            display: block;
-            font-size: 4rem;
+        .batch-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 16px;
-            opacity: 0.5;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .batch-info span {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .batch-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .batch-actions button,
+        .quick-actions button {
+            background: linear-gradient(135deg, #225091 0%, #431373 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 140px;
+        }
+
+        .batch-actions button:hover,
+        .quick-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .batch-actions button:active,
+        .quick-actions button:active {
+            transform: translateY(0);
+        }
+
+        .batch-actions button.btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            box-shadow: 0 4px 16px rgba(108, 117, 125, 0.3);
+        }
+
+        .batch-actions button.btn-secondary:hover {
+            box-shadow: 0 8px 24px rgba(108, 117, 125, 0.4);
+        }
+
+        .batch-actions button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .batch-actions button:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Quick Actions Styling */
+        .quick-actions {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Header Section */
+        .header-section {
+            margin-bottom: 24px;
+        }
+
+        /* Selection Checkbox Styling */
+        .selection-checkbox {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+
+        .selection-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #225091;
+        }
+
+        .declaration-card.selected {
+            border: 2px solid #225091;
+            box-shadow: 0 8px 32px rgba(34, 80, 145, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Spinner for loading states */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .large-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #225091;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        .loading-content p {
+            color: #2c3e50;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Enhanced Actions Styling */
+        .enhanced-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .enhanced-actions button {
+            flex: 1;
+        }
+
+        .standard-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .standard-actions button {
+            flex: 1;
         }
 
         @media (max-width: 768px) {
