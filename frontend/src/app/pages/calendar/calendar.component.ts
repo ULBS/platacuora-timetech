@@ -68,7 +68,7 @@ throw new Error('Method not implemented.');
     isVacation: boolean;
   }[] = [];
 
-  loadedSemester: any = null;
+  //loadedSemester: any = null;
 
   editablePdfTable: any[] = [];
   showPdfPreview: boolean = false;
