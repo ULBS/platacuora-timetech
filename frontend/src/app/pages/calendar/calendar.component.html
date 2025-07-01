@@ -130,23 +130,31 @@
   </div>
 
   <!-- Load Semester Form -->
+<div class="date-selection-form">
   <form (ngSubmit)="loadSemesterCalendar()" #calendarForm="ngForm" class="form-load-calendar">
-    <div class="form-group">
-      <label for="academicYear">An academic:</label>
-      <input type="text" id="academicYear" name="academicYear"
-             [(ngModel)]="selectedAcademicYear"
-             placeholder="Ex: 2024/2025"
-             pattern="\d{4}/\d{4}" required />
+    <div class="form-row">
+      <div class="form-group">
+        <label for="academicYear">An academic:</label>
+        <input type="text" id="academicYear" name="academicYear"
+               [(ngModel)]="selectedAcademicYear"
+               placeholder="Ex: 2024/2025"
+               pattern="\d{4}/\d{4}" required 
+               class="form-control" />
+      </div>
+      <div class="form-group">
+        <label for="semesterNumber">Număr semestru:</label>
+        <input type="number" id="semesterNumber" name="semesterNumber"
+               [(ngModel)]="selectedSemesterNumber"
+               min="1" max="2" required 
+               class="form-control" />
+      </div>
     </div>
-    <div class="form-group">
-      <label for="semesterNumber">Număr semestru:</label>
-      <input type="number" id="semesterNumber" name="semesterNumber"
-             [(ngModel)]="selectedSemesterNumber"
-             min="1" max="2" required />
+    <div class="button-group">
+      <button type="submit" class="btn-propose">Încarcă Calendar</button>
     </div>
-    <button type="submit" class="btn-primary">Încarcă Calendar</button>
-
   </form>
+</div>
+
 
   <!-- Editable Calendar View -->
   <div *ngIf="loadedSemester" class="calendar-editable">
@@ -161,8 +169,8 @@
       </thead>
       <tbody>
         <tr *ngFor="let week of loadedSemester.weeks">
-          <td><input type="text" [(ngModel)]="week.weekNumber" class="form-control" /></td>
-          <td><input type="date" [(ngModel)]="week.startDate" (change)="onWeekDateChange(week)"  class="form-control" /></td>
+          <td><input type="text" [(ngModel)]="week.weekNumber"  class="form-control table-input" /></td>
+          <td><input type="date" [(ngModel)]="week.startDate" (change)="onWeekDateChange(week)"   class="form-control table-input" /></td>
           <td>
             <select [(ngModel)]="week.weekType" 
             (ngModelChange)="onWeekTypeChange(week)" 
