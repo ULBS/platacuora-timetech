@@ -81,11 +81,12 @@ apiRouter.get('/test', (req, res) => {
   res.json({ message: 'Backend API is working!' });
 });
 
+// Serve frontend static files
 const frontendPath = path.join(__dirname, 'dist/frontend/browser');
-
 app.use(express.static(frontendPath));
 
-app.get('*', (req, res) => {
+// Serve index.html doar pentru rutele care NU încep cu /api
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
