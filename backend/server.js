@@ -81,6 +81,14 @@ apiRouter.get('/test', (req, res) => {
   res.json({ message: 'Backend API is working!' });
 });
 
+// Serve frontend Angular static files
+app.use(express.static(path.join(__dirname, 'dist/frontend')));
+
+// Pentru toate rutele care nu sunt API-uri, returnează index.html din dist (ca să funcționeze routing-ul Angular)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist/frontend/index.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
