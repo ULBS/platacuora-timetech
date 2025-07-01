@@ -70,7 +70,7 @@ throw new Error('Method not implemented.');
     weekLabel: string;
     isVacation: boolean;
   }[] = [];
-
+  //loadedSemester: any = null;
   editablePdfTable: any[] = [];
   showPdfPreview: boolean = false;
 
