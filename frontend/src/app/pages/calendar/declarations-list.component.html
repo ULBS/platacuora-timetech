@@ -1,24 +1,131 @@
 <div class="declarations-list-container">
-  <h2>Istoric Declarații</h2>
+  <div class="header-section">
+    <h2>Istoric Declarații</h2>
+    
+    <!-- Batch Actions -->
+    <div class="batch-actions" *ngIf="showBatchActions">
+      <div class="batch-info">
+        <span>{{ selectedDeclarations.length }} declarații selectate</span>
+        <button class="btn btn-secondary btn-sm" (click)="clearAllSelections()">
+          Anulează selecția
+        </button>
+      </div>
+      <div class="batch-buttons">
+        <button 
+          class="btn btn-primary" 
+          (click)="generateBatchPDFs()"
+          [disabled]="isGeneratingPDF">
+          <span *ngIf="isGeneratingPDF" class="spinner"></span>
+          Generează Batch PDF Enhanced
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" *ngIf="declarations.length > 0">
+      <button 
+        class="btn btn-secondary" 
+        (click)="selectAllDeclarations()"
+        *ngIf="!showBatchActions">
+        Selectează Toate
+      </button>
+    </div>
+  </div>
+
   <div class="declarations-grid" *ngIf="declarations.length > 0; else noDeclarations">
-    <div class="declaration-card" *ngFor="let decl of declarations">
+    <div class="declaration-card" 
+         *ngFor="let decl of declarations"
+         [class.selected]="isDeclarationSelected(decl)">
+      
+      <!-- Selection Checkbox -->
+      <div class="selection-checkbox">
+        <input 
+          type="checkbox" 
+          [checked]="isDeclarationSelected(decl)"
+          (change)="toggleDeclarationSelection(decl)">
+      </div>
+
       <div class="declaration-preview">
         <img src="assets/images/pdf-svgrepo-com.svg" alt="PDF" class="pdf-icon" *ngIf="decl.pdfBase64; else noPdf" />
         <ng-template #noPdf>
           <div class="pdf-placeholder">PDF</div>
         </ng-template>
       </div>
+
       <div class="declaration-info">
-        <div class="declaration-period">{{ decl.perioada.start | date:'dd.MM.yyyy' }} - {{ decl.perioada.end | date:'dd.MM.yyyy' }}</div>
-        <div class="declaration-date">Generată în {{ decl.dataCreare | date:'dd.MM.yyyy HH:mm' }}</div>
+        <div class="declaration-period">
+          {{ decl.perioada.start | date:'dd.MM.yyyy' }} - {{ decl.perioada.end | date:'dd.MM.yyyy' }}
+        </div>
+        <div class="declaration-date">
+          Generată în {{ decl.dataCreare | date:'dd.MM.yyyy HH:mm' }}
+        </div>
+        <div class="declaration-status" [ngClass]="'status-' + decl.status">
+          {{ getStatusLabel(decl.status) }}
+        </div>
       </div>
+
       <div class="declaration-actions">
-        <button *ngIf="decl.pdfBase64" (click)="openPdf(decl)">Deschide PDF</button>
-        <button (click)="deleteDeclaration(decl)" style="color: red;">Șterge</button>
+        <!-- Enhanced PDF Actions -->
+        <div class="enhanced-actions">
+          <button 
+            class="btn btn-primary btn-sm" 
+            (click)="generateEnhancedPDF(decl)"
+            [disabled]="isGeneratingPDF"
+            title="Generează PDF cu template oficial ULBS">
+            <span *ngIf="isGeneratingPDF" class="spinner"></span>
+            PDF Enhanced
+          </button>
+          
+          <button 
+            class="btn btn-secondary btn-sm" 
+            (click)="previewDataIntegration(decl)"
+            title="Previzualizează datele integrate">
+            Preview Date
+          </button>
+        </div>
+
+        <!-- Standard Actions -->
+        <div class="standard-actions">
+          <button 
+            *ngIf="decl.pdfBase64" 
+            class="btn btn-outline btn-sm"
+            (click)="openPdf(decl)"
+            title="Deschide PDF existent">
+            Deschide PDF
+          </button>
+          
+          <button 
+            class="btn btn-outline btn-sm"
+            (click)="downloadEnhancedPDF(decl)"
+            [disabled]="isGeneratingPDF"
+            title="Descarcă PDF Enhanced">
+            Descarcă
+          </button>
+
+          <button 
+            class="btn btn-danger btn-sm" 
+            (click)="deleteDeclaration(decl)"
+            title="Șterge declarația">
+            Șterge
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
   <ng-template #noDeclarations>
-    <p>Nu există declarații salvate.</p>
+    <div class="no-declarations">
+      <div class="no-declarations-icon">📄</div>
+      <h3>Nu există declarații salvate</h3>
+      <p>Declarațiile generate vor apărea aici și vor putea fi procesate cu funcții enhanced.</p>
+    </div>
   </ng-template>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isGeneratingPDF">
+    <div class="loading-content">
+      <div class="large-spinner"></div>
+      <p>Generez PDF Enhanced...</p>
+    </div>
+  </div>
 </div>

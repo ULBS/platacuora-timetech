@@ -6,7 +6,12 @@ const jwtConfig = require('../config/jwt.config');
  * Verifies the JWT token and attaches user data to the request
  */
 const authMiddleware = (req, res, next) => {
-  try {    // Get token from various sources
+  try {
+    console.log('🔐 Auth Middleware - Checking for token...');
+    console.log('📋 Headers:', req.headers.authorization ? 'Authorization header present' : 'No Authorization header');
+    console.log('🍪 Cookies:', req.cookies ? Object.keys(req.cookies) : 'No cookies');
+    
+    // Get token from various sources
     let token = null;
     
     // Check each possible source in a way that avoids errors
@@ -28,7 +33,13 @@ const authMiddleware = (req, res, next) => {
       }
     }
 
+    console.log('🔑 Token found:', !!token);
+    if (token) {
+      console.log('🔐 Token preview:', token.substring(0, 20) + '...');
+    }
+
     if (!token) {
+      console.log('❌ No token found - returning 401');
       return res.status(401).json({ message: 'Accesul interzis. Autentificarea este necesară.' });
     }
       
