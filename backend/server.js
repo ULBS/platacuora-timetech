@@ -81,12 +81,12 @@ apiRouter.get('/test', (req, res) => {
   res.json({ message: 'Backend API is working!' });
 });
 
-// Serve static Angular frontend
-app.use(express.static(path.join(__dirname, 'dist/frontend')));
+const frontendPath = path.join(__dirname, 'dist/frontend/browser');
 
-// Serve index.html for non-API routes (SPA routing)
-app.get(/^\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist/frontend/index.html'));
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Start server
