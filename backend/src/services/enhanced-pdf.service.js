@@ -268,7 +268,7 @@ class EnhancedPDFService {
     const columns = [
       { header: 'Nr.\nCrt.', key: 'position', width: 35, align: 'center' },
       { header: 'Data', key: 'date', width: 55, align: 'center' },
-      { header: 'Numărul de ore fizice', key: 'physicalHours', width: 120, align: 'center', subHeaders: ['C', 'S', 'L/A', 'P'] },
+      { header: 'Numarul de ore fizice', key: 'physicalHours', width: 120, align: 'center', subHeaders: ['C', 'S', 'L/A', 'P'] },
       { header: 'Tipul\nactivitatii', key: 'activityType', width: 50, align: 'center' },
       { header: 'Coef.', key: 'coefficient', width: 35, align: 'center' },
       { header: 'Nr.\nore', key: 'totalHours', width: 40, align: 'center' },

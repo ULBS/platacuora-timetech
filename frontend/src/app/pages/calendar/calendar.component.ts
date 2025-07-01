@@ -8,7 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { SemesterService } from '../../core/services/semester.service';
 import { TeachingHour, TeachingHoursService } from '../../core/services/teaching-hours.service';
 import { EnhancedPdfService, PDFOptions } from '../../core/services/enhanced-pdf.service';
-import { PaymentDeclarationService } from '../../core/services/payment-declaration.service';
+import { environment } from '../../../enviroments/environment';
 
 interface DateInfo {
   date: string;
@@ -79,8 +79,7 @@ throw new Error('Method not implemented.');
     private calendarService: CalendarService,
     private semesterService: SemesterService,
     private teachingHoursService: TeachingHoursService,
-    private enhancedPdfService: EnhancedPdfService,
-    private paymentDeclarationService: PaymentDeclarationService
+    private enhancedPdfService: EnhancedPdfService
   ) {}
 
   ngOnInit(): void {
@@ -117,15 +116,15 @@ throw new Error('Method not implemented.');
     const start = new Date(this.startDate);
     const end = new Date(this.endDate);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      alert('Datele introduse nu sunt valide.');
+      console.error('Datele introduse nu sunt valide.');
       return false;
     }
     if (start > end) {
-      alert('Data de început trebuie să fie înainte de data de sfârșit.');
+      console.error('Data de început trebuie să fie înainte de data de sfârșit.');
       return false;
     }
     if (start.getFullYear() !== end.getFullYear() || start.getMonth() !== end.getMonth()) {
-      alert('Calendarul poate fi generat doar pentru o singură lună calendaristică.');
+      console.error('Calendarul poate fi generat doar pentru o singură lună calendaristică.');
       return false;
     }
     return true;
@@ -153,7 +152,7 @@ throw new Error('Method not implemented.');
   const workingDays = this.datesList.filter(date => date.isWorkingDay === true);
   
   if (workingDays.length === 0) {
-    alert('Nu există zile lucrătoare selectate pentru a genera declarația!');
+    console.warn('Nu există zile lucrătoare selectate pentru a genera declarația!');
     return;
   }
 
@@ -270,40 +269,28 @@ throw new Error('Method not implemented.');
   removePdfTableRow(index: number) {
     this.editablePdfTable.splice(index, 1);
   }
-
   async downloadPdfFromPreview() {
     try {
-      console.log('🚀 Calendar PDF Generation - Starting...');
-      
-      // Validate that we have data to generate PDF
       if (!this.editablePdfTable || this.editablePdfTable.length === 0) {
-        alert('Nu există date pentru a genera PDF-ul. Vă rugăm să adăugați cel puțin o intrare în tabel.');
+        console.error('Nu există date pentru a genera PDF-ul. Vă rugăm să adăugați cel puțin o intrare în tabel.');
         return;
       }
       
-      // Get user information
       const userId = this.user?.id || this.user?._id;
       if (!userId) {
-        alert('Nu există utilizator autentificat. Nu se poate salva declarația.');
+        console.error('Nu există utilizator autentificat. Nu se poate salva declarația.');
         return;
       }
 
-      console.log('📋 Calendar PDF - User data:', this.user);
-      console.log('📊 Calendar PDF - Editable table data:', this.editablePdfTable);
-
-      // Filter out empty rows
       const validRows = this.editablePdfTable.filter(row => 
         row && (row.c || row.s || row.la || row.p || row.post)
       );
 
       if (validRows.length === 0) {
-        alert('Nu există date valide pentru a genera PDF-ul. Vă rugăm să completați cel puțin o linie cu ore.');
+        console.error('Nu există date valide pentru a genera PDF-ul. Vă rugăm să completați cel puțin o linie cu ore.');
         return;
       }
 
-      console.log('✅ Calendar PDF - Valid rows for PDF:', validRows.length);
-
-      // Create declaration object matching the format expected by enhanced PDF service
       const newDeclaration = {
         id: Date.now(),
         userId: userId,
@@ -313,59 +300,98 @@ throw new Error('Method not implemented.');
         dataCreare: new Date().toISOString()
       };
 
-      console.log('📋 Calendar PDF - New declaration created:', newDeclaration);
-
-      // Save to localStorage first (for the service to find it)
       const declarations = JSON.parse(localStorage.getItem('declarations') || '[]');
       declarations.push(newDeclaration);
       localStorage.setItem('declarations', JSON.stringify(declarations));
-
-      console.log('💾 Calendar PDF - Declaration saved to localStorage');
-
-      // Also save the hours data in the format expected by the enhanced PDF service
       localStorage.setItem('savedHours', JSON.stringify(validRows));
 
-      // Save declaration to database
       try {
-        console.log('🗄️ Calendar PDF - Saving declaration to database...');
+        const academicYear = this.getAcademicYearFromDate(this.startDate);
+        const semester = this.getSemesterFromDate(this.startDate);
         
-        const declarationData = {
-          title: `Declarație generată din calendar - ${this.startDate} / ${this.endDate}`,
-          faculty: this.user.faculty || 'Inginerie',
-          department: this.user.department || 'Calculatoare și Inginerie Electrică',
-          academicYear: this.paymentDeclarationService.getAcademicYearFromDate(new Date(this.startDate)),
-          semester: this.paymentDeclarationService.getSemesterFromDate(new Date(this.startDate)),
-          startDate: this.startDate,
-          endDate: this.endDate,
-          items: this.paymentDeclarationService.transformTableDataToItems(validRows),
-          comments: 'Declarație generată automat din calendar'
-        };
-
-        this.paymentDeclarationService.createDeclaration(declarationData).subscribe({
-          next: (savedDeclaration) => {
-            console.log('✅ Calendar PDF - Declaration saved to database:', savedDeclaration);
-            
-            // Update localStorage with the database ID
-            const updatedDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
-            const declarationIndex = updatedDeclarations.findIndex((d: any) => d.id === newDeclaration.id);
-            if (declarationIndex >= 0) {
-              updatedDeclarations[declarationIndex].databaseId = savedDeclaration._id;
-              localStorage.setItem('declarations', JSON.stringify(updatedDeclarations));
-            }
-          },
-          error: (error) => {
-            console.error('❌ Calendar PDF - Error saving to database:', error);
-            // Continue with PDF generation even if database save fails
+        const teachingHoursPromises = validRows.map((row, index) => {
+          const courseHours = parseInt(row.c || '0');
+          const seminarHours = parseInt(row.s || '0');
+          const labHours = parseInt(row.la || '0');
+          const projectHours = parseInt(row.p || '0');
+          
+          const nonZeroHours = [courseHours, seminarHours, labHours, projectHours].filter(h => h > 0);
+          
+          let finalCourseHours = courseHours;
+          let finalSeminarHours = seminarHours;
+          let finalLabHours = labHours;
+          let finalProjectHours = projectHours;
+          
+          if (nonZeroHours.length === 0) {
+            finalCourseHours = 1;
+          } else if (nonZeroHours.length > 1) {
+            finalCourseHours = courseHours > 0 ? courseHours : 0;
+            finalSeminarHours = courseHours === 0 && seminarHours > 0 ? seminarHours : 0;
+            finalLabHours = courseHours === 0 && seminarHours === 0 && labHours > 0 ? labHours : 0;
+            finalProjectHours = courseHours === 0 && seminarHours === 0 && labHours === 0 && projectHours > 0 ? projectHours : 0;
           }
+          
+          const teachingHourData = {
+            faculty: this.user?.facultate || 'Inginerie',
+            department: this.user?.departament || 'Calculatoare și Inginerie Electrică',
+            academicYear: academicYear,
+            semester: semester,
+            postNumber: index + 1,
+            postGrade: 'Lect',
+            disciplineName: row.post || 'Disciplină',
+            activityType: row.tip || 'LR',
+            group: row.grupa || 'Grupa 1',
+            dayOfWeek: this.getDayOfWeekFromDate(row.data),
+            courseHours: finalCourseHours,
+            seminarHours: finalSeminarHours,
+            labHours: finalLabHours,
+            projectHours: finalProjectHours,
+            coefficient: parseFloat(row.coef || '1'),
+            startTime: '08:00',
+            endTime: '10:00',
+            notes: `Generated from calendar for date ${row.data}`
+          };
+          
+          return this.http.post(`${environment.apiUrl}/teaching-hours`, teachingHourData).toPromise();
         });
-      } catch (dbError) {
-        console.error('❌ Calendar PDF - Database save error:', dbError);
-        // Continue with PDF generation even if database save fails
-      }
-      
-      console.log('🚀 Calendar PDF - Calling enhanced PDF service...');
 
-      // Generate PDF using enhanced PDF service
+        const teachingHours = await Promise.all(teachingHoursPromises);
+        
+        if (!teachingHours || teachingHours.length === 0) {
+          throw new Error('No teaching hours were created - API returned empty result');
+        }
+        
+        const teachingHourIds = teachingHours.map((th: any) => {
+          const id = th?._id || th?.id || th?.teachingHourId || (typeof th === 'string' ? th : null);
+          return id;
+        });
+        
+        const invalidIds = teachingHourIds.filter((id: any) => !id);
+        if (invalidIds.length > 0) {
+          throw new Error(`Failed to extract IDs from ${invalidIds.length} teaching hour responses. Check backend response structure.`);
+        }
+      
+        const declarationData = {
+          teachingHourIds: teachingHourIds,
+          title: `Declarație generată din calendar - ${this.startDate} / ${this.endDate}`,
+          description: 'Declarație generată automat din calendar',
+          status: 'draft'
+        };
+        
+        const paymentDeclaration = await this.http.post(`${environment.apiUrl}/payment`, declarationData).toPromise();
+        
+        const updatedDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+        const declarationIndex = updatedDeclarations.findIndex((d: any) => d.id === newDeclaration.id);
+        if (declarationIndex >= 0) {
+          updatedDeclarations[declarationIndex].databaseId = (paymentDeclaration as any)._id;
+          localStorage.setItem('declarations', JSON.stringify(updatedDeclarations));
+        }
+        
+      } catch (dbError: any) {
+        const errorMessage = dbError?.message || dbError?.error?.message || 'Unknown database error';
+        console.error('Declarația a fost generată, dar salvarea în baza de date a eșuat:', errorMessage);
+      }
+
       const pdfOptions: PDFOptions = {
         enhanced: true,
         includeQR: true,
@@ -374,7 +400,6 @@ throw new Error('Method not implemented.');
         template: 'ulbs-official'
       };
 
-      // Call the enhanced PDF service
       const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
         newDeclaration.id.toString(),
         pdfOptions
@@ -382,37 +407,24 @@ throw new Error('Method not implemented.');
 
       pdfObservable.subscribe({
         next: (pdfBlob: Blob) => {
-          console.log('✅ Calendar PDF - PDF generated successfully');
-          
-          // Convert to base64 and update the declaration
           this.enhancedPdfService.blobToBase64(pdfBlob).then(base64 => {
-            // Update the declaration with the PDF base64
             const updatedDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
             const declarationIndex = updatedDeclarations.findIndex((d: any) => d.id === newDeclaration.id);
             if (declarationIndex >= 0) {
               updatedDeclarations[declarationIndex].pdfBase64 = base64;
               localStorage.setItem('declarations', JSON.stringify(updatedDeclarations));
             }
-            
-            console.log('💾 Calendar PDF - Declaration updated with PDF base64');
           });
           
-          // Open PDF in new window
           this.enhancedPdfService.openBlobInNewWindow(pdfBlob);
-          
-          console.log('✅ Declaration PDF generated successfully and saved to history!');
-          
-          // Close the preview modal
           this.closePdfPreview();
         },
         error: (error) => {
-          console.error('❌ Calendar PDF - Error generating PDF:', error);
-          alert('Eroare la generarea PDF-ului: ' + (error.message || error));
+          console.error('Eroare la generarea PDF-ului:', error.message || error);
         }
       });
 
     } catch (error) {
-      console.error('❌ Calendar PDF - Unexpected error:', error);
       alert('Eroare neașteptată la generarea PDF-ului.');
     }
   }
@@ -821,33 +833,6 @@ private refreshGeneratedDatesWithNewConfig(): void {
   this.generateDates();
 }
 
-  // Helper methods for PDF generation
-  private getAcademicYearFromDate(dateString: string): string {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1; // JavaScript months are 0-based
-    
-    if (month >= 10) {
-      // October to December - start of academic year
-      return `${date.getFullYear()}/${date.getFullYear() + 1}`;
-    } else {
-      // January to September - end of academic year
-      return `${date.getFullYear() - 1}/${date.getFullYear()}`;
-    }
-  }
-
-  private getSemesterFromDate(dateString: string): number {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1; // JavaScript months are 0-based
-    
-    if (month >= 10 || month <= 1) {
-      // October, November, December, January - Semester 1
-      return 1;
-    } else {
-      // February to September - Semester 2
-      return 2;
-    }
-  }
-
   addVacation() {
     if (!this.currentConfigId) {
       alert('Trebuie să salvezi configurația mai întâi!');
@@ -876,5 +861,64 @@ private refreshGeneratedDatesWithNewConfig(): void {
 
     await html2pdf.default().set(opt).from(element).save();
     element.style.display = 'none';
+  }
+
+  // Helper methods for payment declaration data
+  private getAcademicYearFromDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    
+    if (month >= 10) {
+      return `${year}/${year + 1}`;
+    } else {
+      return `${year - 1}/${year}`;
+    }
+  }
+
+  private getSemesterFromDate(dateStr: string): number {
+    const date = new Date(dateStr);
+    const month = date.getMonth() + 1;
+    
+    if (month >= 10 || month <= 1) {
+      return 1; // October-January = Semester 1
+    } else {
+      return 2; // February-September = Semester 2
+    }
+  }
+
+  private transformTableDataToItems(tableData: any[]): any[] {
+    return tableData.map((row, index) => ({
+      postNumber: index + 1,
+      postGrade: row.tip || 'LR',
+      date: row.data,
+      courseHours: parseInt(row.c || '0'),
+      seminarHours: parseInt(row.s || '0'),
+      labHours: parseInt(row.la || '0'),
+      projectHours: parseInt(row.p || '0'),
+      activityType: row.tip || 'LR',
+      coefficient: parseFloat(row.coef || '1'),
+      totalHours: parseInt(row.nrOre || '0'),
+      groups: row.grupa || ''
+    }));
+  }
+
+  private getDayOfWeekFromDate(dateStr: string): string {
+    // Convert DD.MM.YYYY to Date object
+    const [day, month, year] = dateStr.split('.');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    // Convert to Romanian day names
+    const dayNames = {
+      0: 'Duminica',
+      1: 'Luni', 
+      2: 'Marti',
+      3: 'Miercuri',
+      4: 'Joi',
+      5: 'Vineri',
+      6: 'Sambata'
+    };
+    
+    return dayNames[date.getDay() as keyof typeof dayNames] || 'Luni';
   }
 }
