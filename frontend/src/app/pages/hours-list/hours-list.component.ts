@@ -7,7 +7,8 @@ import { CommonModule } from '@angular/common';
 import { TeachingHoursService, TeachingHour } from '../../core/services/teaching-hours.service';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
-import { forkJoin } from 'rxjs';
+import { forkJoin, take } from 'rxjs';
+import { SharedStatusService } from '../../core/services/shared-status.service';
 
 @Component({
   standalone: true,
@@ -27,8 +28,14 @@ export class HoursListComponent implements OnInit {
   filters = { discipline: '', activityType: '', academicYear: '', semester: '' };
   selected: boolean[] = [];
   filteredRows: { ctrl: AbstractControl }[] = [];
+  isEditing: boolean = false;
+  isVerified: boolean = false;
 
-  constructor(private fb: FormBuilder, private service: TeachingHoursService) {
+  constructor(
+    private fb: FormBuilder, 
+    private service: TeachingHoursService,
+    private sharedStatusService: SharedStatusService 
+  ) {
     this.hoursForm = this.fb.group({
       hours: this.fb.array([])
     });
@@ -40,9 +47,15 @@ export class HoursListComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+
+    this.hoursForm.valueChanges.subscribe(() => {
+      this.isEditing = true;
+      this.isVerified = false;
+      this.sharedStatusService.setHoursEditingStatus(true);
+    });
   }
 
-  loadData() {
+ loadData() {
     this.service.loadHours();
     this.service.hours$.subscribe(records => {
       this.hours.clear();
@@ -53,6 +66,9 @@ export class HoursListComponent implements OnInit {
         this.selected.push(false);
       });
       this.updateFilteredRows();
+      this.isEditing = false;
+      this.isVerified = true; 
+      this.sharedStatusService.setHoursEditingStatus(false);
     });
   }
 
@@ -61,6 +77,9 @@ export class HoursListComponent implements OnInit {
     this.hours.push(row);
     this.selected.push(false);
     this.updateFilteredRows();
+    this.isEditing = true;
+    this.isVerified = false;
+    this.sharedStatusService.setHoursEditingStatus(true);
   }
 
   removeRow(index: number) {
@@ -73,6 +92,9 @@ export class HoursListComponent implements OnInit {
             this.hours.removeAt(index);
             this.selected.splice(index, 1);
             this.updateFilteredRows();
+            this.isEditing = true;
+            this.isVerified = false;
+            this.sharedStatusService.setHoursEditingStatus(true);
           },
           error: (err) => {
             console.error('Error deleting hour:', err);
@@ -84,9 +106,10 @@ export class HoursListComponent implements OnInit {
       this.hours.removeAt(index);
       this.selected.splice(index, 1);
       this.updateFilteredRows();
+      this.isEditing = true;
+      this.isVerified = false;
     }
   }
-
   updateFilteredRows(): void {
     const values = this.hours.getRawValue();
     this.filteredRows = this.hours.controls
@@ -111,7 +134,6 @@ export class HoursListComponent implements OnInit {
     this.selected = this.selected.map(() => checked);
   }
 
-  // Add these methods to your HoursListComponent class
 
 hasSelectedRows(): boolean {
   return this.selected.some(isSelected => isSelected);
@@ -228,7 +250,7 @@ updateSelectedRows() {
     FileSaver.saveAs(blob, 'ore-didactice.xlsx');
   }
 
-  async submitForm() {
+   async submitForm() {
     if (this.isSaving) return;
     
     this.submitted = true;
@@ -276,7 +298,14 @@ updateSelectedRows() {
       }
       
       alert('Orele au fost salvate cu succes!');
-      this.loadData();
+      
+      this.service.loadHours();
+      this.service.hours$.pipe(take(1)).subscribe(() => {
+        this.isEditing = false;
+        this.isVerified = true;
+        this.sharedStatusService.setHoursEditingStatus(false);
+      });
+      
     } catch (err) {
       console.error('Eroare la salvare:', err);
       this.errorMessages.push('Eroare la salvare. Verifică consola pentru detalii.');

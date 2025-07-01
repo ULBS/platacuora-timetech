@@ -6,6 +6,7 @@ import { CalendarService, HolidayResponse } from '../../../core/services/calenda
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SemesterService } from '../../core/services/semester.service';
+import { SharedStatusService } from '../../core/services/shared-status.service';
 
 interface DateInfo {
   date: string;
@@ -74,11 +75,13 @@ throw new Error('Method not implemented.');
 
   editablePdfTable: any[] = [];
   showPdfPreview: boolean = false;
+  isHoursInEditing: boolean = false;
 
   constructor(
     private http: HttpClient,
     private calendarService: CalendarService,
-    private semesterService: SemesterService
+    private semesterService: SemesterService,
+     private sharedStatusService: SharedStatusService
   ) {}
 
   ngOnInit(): void {
@@ -95,6 +98,9 @@ throw new Error('Method not implemented.');
         directorDepartament: 'Director Test'
       };
     }
+    this.sharedStatusService.hoursEditingStatus$.subscribe(
+      isEditing => this.isHoursInEditing = isEditing
+    );
   }
 
   formatDateForInput(date: Date): string {

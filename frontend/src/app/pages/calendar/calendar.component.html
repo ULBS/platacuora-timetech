@@ -58,15 +58,19 @@
         />
       </div>
     </div>
-    <div class="button-group">
-      <button 
-        type="button" 
-        (click)="generateDates()" 
-        class="btn-propose" 
-        [disabled]="isLoading || semesterStructureStatus === 'IN_EDITARE'">
-        {{ isLoading ? 'Se procesează...' : 'Propune date' }}
-      </button>
-    </div>
+   <div class="button-group">
+  <button
+    type="button"
+    (click)="generateDates()"
+    class="btn-propose"
+    [disabled]="isLoading || semesterStructureStatus === 'IN_EDITARE' || isHoursInEditing">
+    {{ isLoading ? 'Se procesează...' : 'Propune date' }}
+  </button>
+  
+  <div *ngIf="isHoursInEditing" class="alert alert-info mt-2">
+    <small>Butonul este dezactivat deoarece lista ore este în editare. Salvează modificările din lista ore pentru a continua.</small>
+  </div>
+</div>
   </div>
 
   

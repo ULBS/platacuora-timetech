@@ -8,7 +8,6 @@
       </ul>
     </div>
 
-   <!-- Înlocuiește div-ul cu .row.mb-3 cu: -->
 <div class="filter-bar d-flex flex-wrap justify-content-center align-items-center gap-3 mb-4">
   <input
     [(ngModel)]="filters.discipline"
@@ -54,8 +53,15 @@
 
 </div>
 
-
-
+  <div *ngIf="isEditing || isVerified" class="mb-2">
+  <div *ngIf="isEditing && !isVerified" class="alert alert-warning">
+    Status: <strong>În editare</strong>
+  </div>
+  
+  <div *ngIf="isVerified && !isEditing" class="alert alert-success" style="color: #28a745 ;">
+    Status: <strong>✓ Verificat</strong>
+  </div>
+  </div>
 
     <!-- Tabel -->
     <div class="table-responsive">
@@ -121,7 +127,7 @@
       </select>
     </td>
 
-    <td><input class="form-control" formControlName="group" /></td>
+    <td><input class="form-control input-sm" formControlName="totalHours" /></td>
 
    
     <td>
