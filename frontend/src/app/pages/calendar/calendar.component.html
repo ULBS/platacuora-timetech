@@ -233,59 +233,6 @@
   </div>
 </div>
 
-<!-- Vacation Configuration Section -->
-<div class="calendar-container">
-  <div class="calendar-header">
-    <h1>🎯 Adăugare Vacanță / Perioadă Specială</h1>
-  </div>
-
-  <div class="date-selection-form">
-    <form (ngSubmit)="addVacation()" #vacationForm="ngForm">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="vacationName">Nume vacanță:</label>
-          <input
-            type="text"
-            id="vacationName"
-            name="vacationName"
-            [(ngModel)]="vacation.name"
-            required
-            class="form-control"
-          />
-        </div>
-        <div class="form-group">
-          <label for="vacationStart">Început:</label>
-          <input
-            type="date"
-            id="vacationStart"
-            name="vacationStart"
-            [(ngModel)]="vacation.startDate"
-            required
-            class="form-control"
-          />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="vacationEnd">Sfârșit:</label>
-          <input
-            type="date"
-            id="vacationEnd"
-            name="vacationEnd"
-            [(ngModel)]="vacation.endDate"
-            required
-            class="form-control"
-          />
-        </div>
-        <div class="form-group">
-          <!-- Empty for layout balance -->
-        </div>
-      </div>
-      <div class="button-group">
-        <button type="submit" class="btn-propose">Adaugă Vacanță</button>
-      </div>
-  </form>
-</div>
 
 
 
