@@ -83,7 +83,7 @@ throw new Error('Method not implemented.');
     private http: HttpClient,
     private calendarService: CalendarService,
     private semesterService: SemesterService,
-    private sharedStatusService: SharedStatusService
+    private sharedStatusService: SharedStatusService,
     private teachingHoursService: TeachingHoursService,
     private enhancedPdfService: EnhancedPdfService
   ) {}
