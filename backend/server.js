@@ -24,7 +24,7 @@ app.use('/pdfs', express.static(path.join(__dirname, 'public/pdfs')));
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -60,16 +60,18 @@ const authRoutes = require('./src/routes/auth.routes');
 const userRoutes = require('./src/routes/user.routes');
 const calendarRoutes = require('./src/routes/calendar.routes');
 const semesterRoutes = require('./src/routes/semester.routes');
-const teachingHoursRoutes = require('./src/routes/teachingHoursRoutes'); // Updated to use the enhanced version
+const teachingHoursRoutes = require('./src/routes/teachingHoursRoutes');
 const paymentRoutes = require('./src/routes/payment.routes');
+const enhancedPdfRoutes = require('./src/routes/enhanced-pdf.routes');
 
 // Register routes
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/calendar', calendarRoutes);
 apiRouter.use('/semester', semesterRoutes);
-apiRouter.use('/teaching-hours', teachingHoursRoutes); // Using enhanced routes
+apiRouter.use('/teaching-hours', teachingHoursRoutes);
 apiRouter.use('/payment', paymentRoutes);
+apiRouter.use('/pdf', enhancedPdfRoutes); // Enhanced PDF routes
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
@@ -77,6 +79,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // Test route
 apiRouter.get('/test', (req, res) => {
   res.json({ message: 'Backend API is working!' });
+});
+
+// Serve frontend static files
+const frontendPath = path.join(__dirname, 'dist/frontend/browser');
+app.use(express.static(frontendPath));
+
+// Serve index.html doar pentru rutele care NU încep cu /api
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Start server

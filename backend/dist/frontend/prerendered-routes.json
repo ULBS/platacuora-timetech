@@ -1,0 +1,12 @@
+{
+  "routes": {
+    "/": {},
+    "/auth-callback": {},
+    "/calendar": {},
+    "/debug-auth": {},
+    "/declarations": {},
+    "/hours-list": {},
+    "/login": {},
+    "/profile": {}
+  }
+}

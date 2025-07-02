@@ -1,4 +1,3 @@
-
 export interface Declaration {
   id: string | number;
   userId: string | number;
@@ -15,6 +14,8 @@ export interface Declaration {
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { EnhancedPdfService, PDFOptions } from '../../core/services/enhanced-pdf.service';
+import { DialogService } from '../../core/services/dialog.service';
 
 
 @Component({
@@ -27,6 +28,14 @@ import { FormsModule } from '@angular/forms';
 export class DeclarationsListComponent implements OnInit {
   declarations: Declaration[] = [];
   selectedDeclaration: Declaration | null = null;
+  selectedDeclarations: Declaration[] = [];
+  isGeneratingPDF = false;
+  showBatchActions = false;
+
+  constructor(
+    private enhancedPdfService: EnhancedPdfService,
+    private dialogService: DialogService
+  ) {}
 
   ngOnInit() {
     this.loadDeclarations();
@@ -163,5 +172,250 @@ export class DeclarationsListComponent implements OnInit {
       console.log(`Curățat ${allDeclarations.length - cleanDeclarations.length} declarații corupte`);
       this.loadDeclarations();
     }
+  }
+
+  // ===== ENHANCED PDF METHODS =====
+
+  /**
+   * Generate enhanced PDF for a single declaration
+   */
+  async generateEnhancedPDF(decl: Declaration) {
+    try {
+      const result = await this.dialogService.openPdfOptionsDialog({
+        declarationId: decl.id.toString(),
+        mode: 'single'
+      });
+
+      if (result?.action === 'generate') {
+        this.isGeneratingPDF = true;
+        
+        try {
+          // Get the current declaration data from localStorage to ensure we have latest data
+          const userObj = JSON.parse(localStorage.getItem('user') || '{}'); 
+          const userId = userObj.id || userObj._id;
+          const currentDecl = this.getDeclarationsForUser(userId)
+            .find(d => d.id === decl.id) || decl;
+          
+          console.log('Generating enhanced PDF for declaration:', {
+            id: currentDecl.id,
+            activitatiCount: currentDecl.activitati?.length || 0,
+            hasData: currentDecl.activitati?.some(a => a.c || a.s || a.la || a.p) || false
+          });
+          
+          const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
+            currentDecl.id.toString(), 
+            result.options
+          );
+          
+          const pdfBlob = await pdfObservable.toPromise();
+
+          if (pdfBlob) {
+            // Save PDF to declaration
+            const base64 = await this.enhancedPdfService.blobToBase64(pdfBlob);
+            this.updateDeclarationPDF(decl, base64);
+
+            // Open PDF in new window
+            this.enhancedPdfService.openBlobInNewWindow(pdfBlob);
+
+            this.showSuccessMessage('PDF generat cu succes!');
+          }
+        } catch (error) {
+          console.error('Error generating enhanced PDF:', error);
+          this.showErrorMessage('Eroare la generarea PDF-ului: ' + error);
+        } finally {
+          this.isGeneratingPDF = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error opening PDF options dialog:', error);
+    }
+  }
+
+  /**
+   * Generate batch PDFs for selected declarations
+   */
+  async generateBatchPDFs() {
+    if (this.selectedDeclarations.length === 0) {
+      this.showErrorMessage('Selectați cel puțin o declarație pentru generarea batch.');
+      return;
+    }
+
+    try {
+      const result = await this.dialogService.openPdfOptionsDialog({
+        declarationIds: this.selectedDeclarations.map(d => d.id.toString()),
+        mode: 'batch'
+      });
+
+      if (result?.action === 'generate') {
+        this.isGeneratingPDF = true;
+        
+        try {
+          const batchResult = await this.enhancedPdfService.generateBatchPDFs({
+            declarationIds: this.selectedDeclarations.map(d => d.id.toString()),
+            options: result.options
+          }).toPromise();
+
+          if (batchResult) {
+            this.showSuccessMessage(
+              `Batch completat: ${batchResult.summary.successful}/${batchResult.summary.total} PDF-uri generate cu succes`
+            );
+
+            // Reset selection
+            this.selectedDeclarations = [];
+            this.showBatchActions = false;
+          }
+        } catch (error) {
+          console.error('Error generating batch PDFs:', error);
+          this.showErrorMessage('Eroare la generarea batch PDF: ' + error);
+        } finally {
+          this.isGeneratingPDF = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error opening batch PDF options dialog:', error);
+    }
+  }
+
+  /**
+   * Download enhanced PDF for a declaration
+   */
+  async downloadEnhancedPDF(decl: Declaration, options: PDFOptions = {}) {
+    this.isGeneratingPDF = true;
+    
+    try {
+      const pdfObservable = await this.enhancedPdfService.generateEnhancedPDF(
+        decl.id.toString(), 
+        { ...options, enhanced: true }
+      );
+      
+      const pdfBlob = await pdfObservable.toPromise();
+
+      if (pdfBlob) {
+        const filename = `PO-Enhanced-${decl.perioada.start}-${decl.perioada.end}-${decl.id}.pdf`;
+        this.enhancedPdfService.downloadBlob(pdfBlob, filename);
+        this.showSuccessMessage('PDF descărcat cu succes!');
+      }
+    } catch (error) {
+      console.error('Error downloading enhanced PDF:', error);
+      this.showErrorMessage('Eroare la descărcarea PDF-ului: ' + error);
+    } finally {
+      this.isGeneratingPDF = false;
+    }
+  }
+
+  /**
+   * Preview data integration for a declaration
+   */
+  async previewDataIntegration(decl: Declaration) {
+    try {
+      const preview = await this.enhancedPdfService.getDataPreview(decl.id.toString()).toPromise();
+      
+      if (preview) {
+        this.showPreviewDialog(preview);
+      }
+    } catch (error) {
+      console.error('Error getting data preview:', error);
+      this.showErrorMessage('Eroare la obținerea preview-ului: ' + error);
+    }
+  }
+
+  /**
+   * Toggle declaration selection for batch operations
+   */
+  toggleDeclarationSelection(decl: Declaration) {
+    const index = this.selectedDeclarations.findIndex(d => d.id === decl.id);
+    
+    if (index > -1) {
+      this.selectedDeclarations.splice(index, 1);
+    } else {
+      this.selectedDeclarations.push(decl);
+    }
+    
+    this.showBatchActions = this.selectedDeclarations.length > 0;
+  }
+
+  /**
+   * Select all declarations
+   */
+  selectAllDeclarations() {
+    this.selectedDeclarations = [...this.declarations];
+    this.showBatchActions = true;
+  }
+
+  /**
+   * Clear all selections
+   */
+  clearAllSelections() {
+    this.selectedDeclarations = [];
+    this.showBatchActions = false;
+  }
+
+  /**
+   * Check if declaration is selected
+   */
+  isDeclarationSelected(decl: Declaration): boolean {
+    return this.selectedDeclarations.some(d => d.id === decl.id);
+  }
+
+  /**
+   * Update declaration with new PDF
+   */
+  private updateDeclarationPDF(decl: Declaration, pdfBase64: string) {
+    let allDeclarations = JSON.parse(localStorage.getItem('declarations') || '[]');
+    const index = allDeclarations.findIndex((d: Declaration) => d.id === decl.id);
+    
+    if (index > -1) {
+      allDeclarations[index].pdfBase64 = pdfBase64;
+      allDeclarations[index].status = 'generata';
+      localStorage.setItem('declarations', JSON.stringify(allDeclarations));
+      this.loadDeclarations();
+    }
+  }
+
+  /**
+   * Show preview dialog (simplified implementation)
+   */
+  private showPreviewDialog(preview: any) {
+    const message = `
+      Preview Date Integrate:
+      - Total ore: ${preview.preview.totalHours}
+      - Activități: ${preview.preview.activitiesCount}
+      - Discipline: ${preview.preview.disciplinesCount}
+      - Înregistrări: ${preview.preview.totalItems}
+      
+      ${!preview.validation.isValid ? 'ATENȚIE: Date invalide detectate!' : 'Date valide pentru generare'}
+    `;
+    
+    alert(message);
+  }
+
+  /**
+   * Show success message
+   */
+  private showSuccessMessage(message: string) {
+    // In a real app, you'd use a proper notification service
+    alert('✅ ' + message);
+  }
+
+  /**
+   * Get status label for display
+   */
+  getStatusLabel(status: string): string {
+    const labels: { [key: string]: string } = {
+      'draft': 'Draft',
+      'trimis': 'Trimis',
+      'aprobat': 'Aprobat', 
+      'respins': 'Respins',
+      'generata': 'Generată'
+    };
+    return labels[status] || status;
+  }
+
+  /**
+   * Show error message
+   */
+  private showErrorMessage(message: string) {
+    // In a real app, you'd use a proper notification service
+    alert('❌ ' + message);
   }
 }

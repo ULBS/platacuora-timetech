@@ -403,6 +403,11 @@ router.post(
     paymentCtrl.generatePDF
 );
 
+// Enhanced PDF routes
+router.post('/:id/pdf/enhanced', authMiddleware, paymentCtrl.generateEnhancedPDF);
+router.post('/batch/pdf', authMiddleware, paymentCtrl.generateBatchPDFs);
+router.get('/:id/data-preview', authMiddleware, paymentCtrl.getDataPreview);
+
 module.exports = router;
 
 

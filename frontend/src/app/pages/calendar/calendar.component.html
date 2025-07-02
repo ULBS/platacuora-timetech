@@ -155,13 +155,14 @@
   </form>
 </div>
 
-
   <!-- Editable Calendar View -->
-  <div *ngIf="loadedSemester" class="calendar-editable">
-    <h3>Structură pentru {{ loadedSemester.academicYear }} - Semestru {{ loadedSemester.semester }}</h3>
-    <table class="calendar-table">
+  <div *ngIf="loadedSemester" class="dates-list">
+    <div class="semester-info">
+      <h3>Structură pentru {{ loadedSemester.academicYear }} - Semestru {{ loadedSemester.semester }}</h3>
+    </div>
+    <table class="dates-table calendar-table">
       <thead>
-        <tr>
+        <tr class="calendar-table-header-row">
           <th>Săptămână</th>
           <th>Dată început</th>
           <th>Tip săptămână</th>
@@ -172,14 +173,15 @@
           <td><input type="text" [(ngModel)]="week.weekNumber"  class="form-control table-input" /></td>
           <td><input type="date" [(ngModel)]="week.startDate" (change)="onWeekDateChange(week)"   class="form-control table-input" /></td>
           <td>
-            <select [(ngModel)]="week.weekType" 
-            (ngModelChange)="onWeekTypeChange(week)" 
-            class="form-control">
-            <option value="Par">Par</option>
-            <option value="Impar">Impar</option>
-            </select>
+            <div class="custom-select">
+              <select [(ngModel)]="week.weekType" 
+              (ngModelChange)="onWeekTypeChange(week)" 
+              class="form-control">
+              <option value="Par">Par</option>
+              <option value="Impar">Impar</option>
+              </select>
+            </div>
           </td>
-          
         </tr>
     <button style="margin-right: 140px;"
         class="btn-verify"
@@ -193,102 +195,78 @@
     </span>
       </tbody>
     </table>
+    <div class="button-group" style="padding: 20px;">
+      <button (click)="saveEditedSemester()" class="btn-propose">💾 Salvează Modificările</button>
+    </div>
   </div>
 
-   
-    
-
 <!-- Semester Structure Configuration -->
-<div class="semester-structure-section">
-  <h2>🗓️ Configurare Structură Semestru</h2>
-  <form (ngSubmit)="saveSemesterStructure()" #semesterForm="ngForm">
-    <div class="form-group">
-      <label for="semesterStart">Data de început semestru:</label>
-      <input
-        type="date"
-        id="semesterStart"
-        name="semesterStart"
-        [(ngModel)]="semesterStart"
-        required
-      />
-    </div>
-    <div class="form-group">
-      <label for="semesterEnd">Data de sfârșit semestru:</label>
-      <input
-        type="date"
-        id="semesterEnd"
-        name="semesterEnd"
-        [(ngModel)]="semesterEnd"
-        required
-      />
-    </div>
-    <div class="form-group">
-      <label for="semesterNumber">Număr semestru:</label>
-      <input
-        type="number"
-        id="semesterNumber"
-        name="semesterNumber"
-        [(ngModel)]="semesterNumber"
-        min="1"
-        max="2"
-        required
-      />
-    </div>
-    <div class="form-group checkbox">
-      <label>
-        <input
-          type="checkbox"
-          name="isMedicine"
-          [(ngModel)]="isMedicine"
-        />
-        Este pentru Facultatea de Medicină
-      </label>
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn-success">
-        Salvează Configurația și Generează Săptămâni
-      </button>
-    </div>
-  </form>
+<div class="calendar-container">
+  <div class="calendar-header">
+    <h1>🗓️ Configurare Structură Semestru</h1>
+  </div>
 
-  <hr />
-  <h3>🎯 Adăugare Vacanță / Perioadă Specială</h3>
-  <form (ngSubmit)="addVacation()" #vacationForm="ngForm">
-    <div class="form-group">
-      <label for="vacationName">Nume vacanță:</label>
-      <input
-        type="text"
-        id="vacationName"
-        name="vacationName"
-        [(ngModel)]="vacation.name"
-        required
-      />
-    </div>
-    <div class="form-group">
-      <label for="vacationStart">Început:</label>
-      <input
-        type="date"
-        id="vacationStart"
-        name="vacationStart"
-        [(ngModel)]="vacation.startDate"
-        required
-      />
-    </div>
-    <div class="form-group">
-      <label for="vacationEnd">Sfârșit:</label>
-      <input
-        type="date"
-        id="vacationEnd"
-        name="vacationEnd"
-        [(ngModel)]="vacation.endDate"
-        required
-      />
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn-add">Adaugă Vacanță</button>
-    </div>
-  </form>
+  <div class="date-selection-form">
+    <form (ngSubmit)="saveSemesterStructure()" #semesterForm="ngForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="semesterStart">Data de început semestru:</label>
+          <input
+            type="date"
+            id="semesterStart"
+            name="semesterStart"
+            [(ngModel)]="semesterStart"
+            required
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label for="semesterEnd">Data de sfârșit semestru:</label>
+          <input
+            type="date"
+            id="semesterEnd"
+            name="semesterEnd"
+            [(ngModel)]="semesterEnd"
+            required
+            class="form-control"
+          />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="semesterNumber">Număr semestru:</label>
+          <input
+            type="number"
+            id="semesterNumber"
+            name="semesterNumber"
+            [(ngModel)]="semesterNumber"
+            min="1"
+            max="2"
+            required
+            class="form-control"
+          />
+        </div>
+      </div>
+      <div class="checkbox-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="isMedicine"
+            [(ngModel)]="isMedicine"
+            class="checkbox-input"
+          />
+          <span class="checkbox-text">Este pentru Facultatea de Medicină</span>
+        </label>
+      </div>
+      <div class="button-group">
+        <button type="submit" class="btn-propose">
+          Salvează Configurația și Generează Săptămâni
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
+
 
 
 
@@ -396,123 +374,3 @@
     <button class="btn-pdf" (click)="downloadPdfFromPreview()">Descarcă PDF</button>
   </div>
 </div>
-
-<style>
-  body {
-    font-family: 'Times New Roman', serif;
-    margin: 20px;
-    line-height: 1.4;
-    background-color: #f8f9fa;
-  }
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: white;
-    padding: 30px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-  .header {
-    text-align: left;
-    margin-bottom: 30px;
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  .university-name {
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-  .approval-section {
-    float: right;
-    text-align: center;
-    margin-left: 20px;
-    margin-bottom: 20px;
-    font-size: 12px;
-  }
-  .approval-section div {
-    margin-bottom: 5px;
-  }
-  .title {
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    margin: 40px 0 30px 0;
-    clear: both;
-  }
-  .content {
-    font-size: 12px;
-    text-align: justify;
-    clear: both;
-  }
-  .highlight {
-    color: #0066cc;
-    font-weight: bold;
-  }
-  .clearfix::after {
-    content: "";
-    display: table;
-    clear: both;
-  }
-  .calendar-icon-right {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-  }
-
-  .semester-structure-section {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #f5f5f5;
-    border-radius: 5px;
-  }
-  .semester-structure-section h2,
-  .semester-structure-section h3 {
-    color: #333;
-  }
-  .form-group {
-    margin-bottom: 15px;
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  .form-group input[type="date"],
-  .form-group input[type="text"] {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  .form-actions {
-    margin-top: 20px;
-  }
-  .btn-primary,
-  .btn-success,
-  .btn-add {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 10px;
-  }
-  .btn-primary {
-    background-color: #007bff;
-    color: white;
-  }
-  .btn-success {
-    background-color: #28a745;
-    color: white;
-  }
-  .btn-add {
-    background-color: #17a2b8;
-    color: white;
-  }
-  .checkbox label {
-    display: flex;
-    align-items: center;
-  }
-  .checkbox input {
-    margin-right: 10px;
-  }
-</style>

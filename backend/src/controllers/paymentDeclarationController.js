@@ -2,6 +2,7 @@ const Calendar = require('../models/calendar.model');
 const PaymentDeclaration = require('../models/payment-declaration.model');
 const TeachingHours = require('../models/teaching-hours.model');
 const PDFService = require('../services/pdf.service');
+const DataIntegrationService = require('../services/data-integration.service');
 const fs   = require('fs');
 const path = require('path');
 
@@ -369,83 +370,182 @@ exports.generatePDF = async (req, res) => {
   }
 };
 
-// /**
-//  * Submit payment declaration for approval
-//  * PUT /api/payment/:id/submit
-//  */
-// exports.submitPaymentDeclaration = async (req, res) => {
-//   try {
-//     const decl = await PaymentDeclaration.findById(req.params.id);
-//     if (!decl) {
-//       return res.status(404).json({ message: 'Declarație de plată negăsită' });
-//     }
-//     if (decl.userId.toString() !== req.user.id) {
-//       return res.status(403).json({ message: 'Acces interzis' });
-//     }
-//     if (decl.status !== 'draft') {
-//       return res.status(400).json({ message: 'Declarația nu poate fi trimisă în stadiul curent' });
-//     }
-//     decl.status      = 'pending';
-//     decl.submittedAt = Date.now();
-//     await decl.save();
-//     res.json(decl);
-//   } catch (err) {
-//     console.error('Submit payment declaration error:', err);
-//     res.status(500).json({ message: 'Eroare de server' });
-//   }
-// };
+/**
+ * Generate PDF with enhanced features
+ * POST /api/payment/:id/pdf/enhanced
+ */
+exports.generateEnhancedPDF = async (req, res) => {
+  try {
+    const decl = await PaymentDeclaration.findById(req.params.id)
+      .populate('user', 'firstName lastName email position faculty department')
+      .populate('semester', 'name academicYear');
 
-// /**
-//  * Approve payment declaration (admin only)
-//  * PUT /api/payment/:id/approve
-//  */
-// exports.approvePaymentDeclaration = async (req, res) => {
-//   try {
-//     const decl = await PaymentDeclaration.findById(req.params.id);
-//     if (!decl) {
-//       return res.status(404).json({ message: 'Declarație de plată negăsită' });
-//     }
-//     if (decl.status !== 'pending') {
-//       return res.status(400).json({ message: 'Declarația nu este în așteptare' });
-//     }
-//     decl.status      = 'approved';
-//     decl.approvedBy  = req.user.id;
-//     decl.approvedAt  = Date.now();
-//     await decl.save();
-//     res.json(decl);
-//   } catch (err) {
-//     console.error('Approve payment declaration error:', err);
-//     res.status(500).json({ message: 'Eroare de server' });
-//   }
-// };
+    if (!decl) {
+      return res.status(404).json({ message: 'Declarație de plată negăsită' });
+    }
 
-// /**
-//  * Reject payment declaration (admin only)
-//  * PUT /api/payment/:id/reject
-//  */
-// exports.rejectPaymentDeclaration = async (req, res) => {
-//   try {
-//     const { rejectionReason } = req.body;
-//     if (!rejectionReason) {
-//       return res.status(400).json({ message: 'Motivul respingerii este obligatoriu' });
-//     }
-//     const decl = await PaymentDeclaration.findById(req.params.id);
-//     if (!decl) {
-//       return res.status(404).json({ message: 'Declarație de plată negăsită' });
-//     }
-//     if (decl.status !== 'pending') {
-//       return res.status(400).json({ message: 'Declarația nu este în așteptare' });
-//     }
-//     decl.status          = 'rejected';
-//     decl.rejectionReason = rejectionReason;
-//     decl.rejectedBy      = req.user.id;
-//     decl.rejectedAt      = Date.now();
-//     await decl.save();
-//     res.json(decl);
-//   } catch (err) {
-//     console.error('Reject payment declaration error:', err);
-//     res.status(500).json({ message: 'Eroare de server' });
-//   }
-// };
+    const authorId = decl.user._id.toString();
+    const isOwner = authorId === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Acces interzis' });
+    }
 
-// Approve or Reject PO by admin
+    // Enhanced PDF options from request body
+    const options = {
+      enhanced: true,
+      includeQR: req.body.includeQR !== false,
+      includeWatermark: req.body.includeWatermark === true,
+      digitalSignature: req.body.digitalSignature === true,
+      template: req.body.template || 'ulbs-official',
+      ...req.body.options
+    };
+
+    // Add digital signature configuration if requested
+    if (options.digitalSignature) {
+      options.certificatePath = process.env.DEFAULT_CERTIFICATE_PATH;
+      options.certificatePassword = process.env.DEFAULT_CERTIFICATE_PASSWORD;
+      options.signerInfo = {
+        userId: req.user.id,
+        name: `${req.user.firstName} ${req.user.lastName}`,
+        email: req.user.email,
+        role: req.user.role,
+        organization: 'Universitatea Lucian Blaga din Sibiu'
+      };
+    }
+
+    const pdfBuffer = await PDFService.buildDeclarationPDF(decl, options);
+
+    const filename = `PO-Enhanced-${decl.academicYear}-S${decl.semester}-${decl.user.lastName}-${decl._id}.pdf`;
+    
+    res.status(200).set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+      'X-Enhanced-PDF': 'true',
+      'X-Template': options.template,
+      'X-Digital-Signature': options.digitalSignature ? 'applied' : 'none'
+    });
+
+    res.send(pdfBuffer);
+
+  } catch (err) {
+    console.error('Enhanced PDF generation error:', err);
+    res.status(500).json({ 
+      message: 'Eroare la generarea PDF-ului enhanced', 
+      details: err.message 
+    });
+  }
+};
+
+/**
+ * Generate batch PDFs
+ * POST /api/payment/batch/pdf
+ */
+exports.generateBatchPDFs = async (req, res) => {
+  try {
+    const { declarationIds, options = {} } = req.body;
+
+    if (!declarationIds || !Array.isArray(declarationIds)) {
+      return res.status(400).json({ message: 'Lista de ID-uri este obligatorie' });
+    }
+
+    // Fetch and authorize declarations
+    const declarations = await PaymentDeclaration.find({
+      _id: { $in: declarationIds }
+    })
+    .populate('user', 'firstName lastName email position faculty department')
+    .populate('semester', 'name academicYear');
+
+    const authorizedDeclarations = declarations.filter(decl => {
+      const isOwner = decl.user._id.toString() === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      return isOwner || isAdmin;
+    });
+
+    if (authorizedDeclarations.length === 0) {
+      return res.status(403).json({ message: 'Nu aveți acces la declarațiile solicitate' });
+    }
+
+    const batchOptions = {
+      ...options,
+      enhanced: options.enhanced !== false,
+      batchSize: Math.min(options.batchSize || 5, 10)
+    };
+
+    const results = await PDFService.generateBatchPDFs(authorizedDeclarations, batchOptions);
+
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    res.status(200).json({
+      message: 'Procesare batch finalizată',
+      summary: {
+        total: results.length,
+        successful: successful.length,
+        failed: failed.length,
+        totalSize: successful.reduce((sum, r) => sum + (r.size || 0), 0)
+      },
+      results: results.map(r => ({
+        id: r.id,
+        success: r.success,
+        error: r.error,
+        size: r.size
+      }))
+    });
+
+  } catch (err) {
+    console.error('Batch PDF generation error:', err);
+    res.status(500).json({ 
+      message: 'Eroare la generarea batch PDF', 
+      details: err.message 
+    });
+  }
+};
+
+/**
+ * Get integrated data preview for declaration
+ * GET /api/payment/:id/data-preview
+ */
+exports.getDataPreview = async (req, res) => {
+  try {
+    const declarationId = req.params.id;
+    
+    // Since declarations are stored in localStorage (frontend), 
+    // create a mock preview for demonstration
+    const mockPreview = {
+      declarationId: declarationId,
+      period: {
+        startDate: new Date().getFullYear() + '-10-01',
+        endDate: new Date().getFullYear() + '-10-31'
+      },
+      integratedData: {
+        items: [
+          { type: 'lecture', hours: 10, discipline: 'Sample Course' },
+          { type: 'seminar', hours: 5, discipline: 'Sample Course' }
+        ]
+      },
+      preview: {
+        totalHours: 15,
+        activitiesCount: 2,
+        disciplinesCount: 1,
+        totalItems: 2
+      },
+      validation: {
+        isValid: true,
+        warnings: [],
+        errors: []
+      }
+    };
+
+    res.status(200).json(mockPreview);
+
+  } catch (err) {
+    console.error('Data preview error:', err);
+    res.status(500).json({ 
+      message: 'Eroare la obținerea preview-ului datelor', 
+      details: err.message 
+    });
+  }
+};
