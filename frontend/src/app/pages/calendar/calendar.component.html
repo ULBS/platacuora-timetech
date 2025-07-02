@@ -21,11 +21,29 @@
           type="button" 
           (click)="openPdfPreview()" 
           class="btn-pdf"
-          [disabled]="datesList.length === 0 || isLoading"
-          *ngIf="datesList.length > 0">
+           [disabled]="datesList.length === 0 || isLoading || calendarStatus === 'IN_EDITARE'"
+           *ngIf="datesList.length > 0">
           <span class="pdf-icon">📄</span>
           Generează Declarație
         </button>
+
+        <div class="verify-section">
+        <button 
+        class="btn-verify"
+        (click)="verifyCalendar()" 
+        [disabled]="calendarStatus === 'VERIFICAT'"
+        *ngIf="datesList.length > 0">Verifică calendar</button>
+        
+        <span
+        class="calendar-status-badge"
+        [ngClass]="{
+          'badge-success': calendarStatus === 'VERIFICAT',
+          'badge-danger': calendarStatus === 'IN_EDITARE'
+        }"  *ngIf="datesList.length > 0">
+        {{ calendarStatus === 'VERIFICAT' ? 'VERIFICAT' : 'IN EDITARE' }}
+        </span>
+        </div>
+       
       </div>
       <div class="form-group">
         <label for="endDate">Data de sfârșit:</label>
@@ -40,16 +58,22 @@
         />
       </div>
     </div>
-    <div class="button-group">
-      <button 
-        type="button" 
-        (click)="generateDates()" 
-        class="btn-propose" 
-        [disabled]="isLoading">
-        {{ isLoading ? 'Se procesează...' : 'Propune date' }}
-      </button>
-    </div>
+   <div class="button-group">
+  <button
+    type="button"
+    (click)="generateDates()"
+    class="btn-propose"
+    [disabled]="isLoading || semesterStructureStatus === 'IN_EDITARE' || isHoursInEditing">
+    {{ isLoading ? 'Se procesează...' : 'Propune date' }}
+  </button>
+  
+  <div *ngIf="isHoursInEditing" class="alert alert-info mt-2">
+    <small>Butonul este dezactivat deoarece lista ore este în editare. Salvează modificările din lista ore pentru a continua.</small>
   </div>
+</div>
+  </div>
+
+  
 
   <div class="loading-indicator" *ngIf="isLoading">
     <div class="spinner"></div>
@@ -78,7 +102,8 @@
           </td>
           <td class="working-day-cell">
             <div class="custom-select working-day-select">
-              <select [(ngModel)]="dateInfo.isWorkingDay">
+              <select [(ngModel)]="dateInfo.isWorkingDay"
+              (ngModelChange)="onWorkingDayChange(dateInfo, $event)">
                 <option [ngValue]="true">Da</option>
                 <option [ngValue]="false">-</option>
               </select>
@@ -86,7 +111,7 @@
           </td>
           <td class="odd-even-cell">
             <div class="custom-select odd-even-select">
-            <select [(ngModel)]="dateInfo.isEven" class="form-control">
+            <select [(ngModel)]="dateInfo.isEven" (change)="onWeekTypeChange(dateInfo)" class="form-control">
             <option [value]="true">Par</option>
             <option [value]="false">Impar</option>
             </select>
@@ -105,30 +130,30 @@
   </div>
 
   <!-- Load Semester Form -->
-  <div class="date-selection-form">
-    <form (ngSubmit)="loadSemesterCalendar()" #calendarForm="ngForm">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="academicYear">An academic:</label>
-          <input type="text" id="academicYear" name="academicYear"
-                 [(ngModel)]="selectedAcademicYear"
-                 placeholder="Ex: 2024/2025"
-                 pattern="\d{4}/\d{4}" required 
-                 class="form-control" />
-        </div>
-        <div class="form-group">
-          <label for="semesterNumber">Număr semestru:</label>
-          <input type="number" id="semesterNumber" name="semesterNumber"
-                 [(ngModel)]="selectedSemesterNumber"
-                 min="1" max="2" required 
-                 class="form-control" />
-        </div>
+<div class="date-selection-form">
+  <form (ngSubmit)="loadSemesterCalendar()" #calendarForm="ngForm" class="form-load-calendar">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="academicYear">An academic:</label>
+        <input type="text" id="academicYear" name="academicYear"
+               [(ngModel)]="selectedAcademicYear"
+               placeholder="Ex: 2024/2025"
+               pattern="\d{4}/\d{4}" required 
+               class="form-control" />
       </div>
-      <div class="button-group">
-        <button type="submit" class="btn-propose">Încarcă Calendar</button>
+      <div class="form-group">
+        <label for="semesterNumber">Număr semestru:</label>
+        <input type="number" id="semesterNumber" name="semesterNumber"
+               [(ngModel)]="selectedSemesterNumber"
+               min="1" max="2" required 
+               class="form-control" />
       </div>
-    </form>
-  </div>
+    </div>
+    <div class="button-group">
+      <button type="submit" class="btn-propose">Încarcă Calendar</button>
+    </div>
+  </form>
+</div>
 
   <!-- Editable Calendar View -->
   <div *ngIf="loadedSemester" class="dates-list">
@@ -145,8 +170,8 @@
       </thead>
       <tbody>
         <tr *ngFor="let week of loadedSemester.weeks">
-          <td><input type="text" [(ngModel)]="week.weekNumber" class="form-control table-input" /></td>
-          <td><input type="date" [(ngModel)]="week.startDate" class="form-control table-input" /></td>
+          <td><input type="text" [(ngModel)]="week.weekNumber"  class="form-control table-input" /></td>
+          <td><input type="date" [(ngModel)]="week.startDate" (change)="onWeekDateChange(week)"   class="form-control table-input" /></td>
           <td>
             <div class="custom-select">
               <select [(ngModel)]="week.weekType" 
@@ -158,13 +183,22 @@
             </div>
           </td>
         </tr>
+    <button style="margin-right: 140px;"
+        class="btn-verify"
+        (click)="verifySemesterStructure()" 
+        [disabled]="semesterStructureStatus === 'VERIFICAT'"
+         *ngIf="loadedSemester">Verifică structura semestrului</button>
+        
+    <span [ngClass]="{'badge-success': semesterStructureStatus === 'VERIFICAT', 'badge-danger': semesterStructureStatus === 'IN_EDITARE'}"
+               *ngIf="loadedSemester">
+          {{ semesterStructureStatus === 'VERIFICAT' ? 'VERIFICAT' : 'IN EDITARE' }}
+    </span>
       </tbody>
     </table>
     <div class="button-group" style="padding: 20px;">
       <button (click)="saveEditedSemester()" class="btn-propose">💾 Salvează Modificările</button>
     </div>
   </div>
-</div>
 
 <!-- Semester Structure Configuration -->
 <div class="calendar-container">

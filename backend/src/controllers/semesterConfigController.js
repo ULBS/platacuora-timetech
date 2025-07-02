@@ -284,7 +284,8 @@ exports.generateWeeks = async (req, res) => {
         weekType: weekType
       });
 
-      currentMonday.setDate(currentMonday.getDate() + 7);
+      currentMonday = new Date(currentMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
+
       weekNumber++;
     }
 
@@ -299,7 +300,8 @@ exports.generateWeeks = async (req, res) => {
           weekType: weekType
         });
         
-        currentMonday.setDate(currentMonday.getDate() + 7);
+        currentMonday = new Date(currentMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
+
       }
     }
 
@@ -483,11 +485,13 @@ exports.addVacationPeriod = async (req, res) => {
 
 // Helper functions
 function getMonday(date) {
-  const d = new Date(date);
+  const d = new Date(date); 
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+  d.setDate(diff);
+  return new Date(d);
 }
+
 
 function calculateWeekInfo(config, date) {
   // Find the week that contains this date

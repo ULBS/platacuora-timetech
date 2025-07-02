@@ -76,6 +76,8 @@ const semesterConfigSchema = new mongoose.Schema(
   }
 );
 
+
+
 // Custom validator to check if end date is after start date
 semesterConfigSchema.pre('validate', function(next) {
   if (this.startDate && this.endDate && this.startDate >= this.endDate) {
