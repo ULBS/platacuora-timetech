@@ -390,12 +390,14 @@ it('should detect duplicate days and week mismatch', async () => {
 
   await calendarController.verifyCalendar(req, res);
 
-  // AICI: în loc de 400, pui ce returnează controllerul în realitate:
-  // De exemplu, dacă returnează 500:
-  sinon.assert.calledWith(res.status, 500);
+  // Assert that the status code is 400 for invalid calendar verification errors
+  sinon.assert.calledWith(res.status, 400);
 
-  // Sau dacă vrei să verifici doar că json a fost apelat
-  sinon.assert.called(res.json);
+  // Assert that the response JSON contains the expected error structure
+  sinon.assert.calledWith(res.json, sinon.match({
+    error: sinon.match.string,
+    details: sinon.match.array
+  }));
 });
 
 
