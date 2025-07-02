@@ -824,10 +824,11 @@ verifyCalendar() {
       );
 
       const special = specialWeeks.find((v: any) => {
-        const vacStart = new Date(v.startDate);
-        const vacEnd = new Date(v.endDate);
-        return current >= vacStart && current <= vacEnd;
-      });
+  const vacStart = new Date(v.startDate);
+  const vacEnd = new Date(v.endDate);
+  return current >= vacStart && current <= vacEnd;
+});
+
 
       this.calendarDays.push({
         date: new Date(current),
